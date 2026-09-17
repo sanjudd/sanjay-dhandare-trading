@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Breakeven Ledger — F&O Profitability Roadmap</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<style>
+:root{
+  --bg:#0B0E14;
+  --panel:#121722;
+  --panel-2:#161c29;
+  --border:#232B3D;
+  --text:#E8EAEF;
+  --muted:#8892A6;
+  --gold:#D4A24C;
+  --gold-dim:#8A6C33;
+  --profit:#3FB68B;
+  --loss:#E5646B;
+  --profit-dim:rgba(63,182,139,0.12);
+  --loss-dim:rgba(229,100,107,0.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  overflow-x:hidden;
+  position:relative;
+}
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  background-image:
+    linear-gradient(rgba(212,162,76,0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,162,76,0.025) 1px, transparent 1px);
+  background-size:48px 48px;
+  background-position: var(--grid-x,0px) var(--grid-y,0px);
+  pointer-events:none;
+  z-index:0;
+  will-change:background-position;
+}
+.mono{font-family:'JetBrains Mono',monospace;}
+.display{font-family:'Space Grotesk',sans-serif;}
+::selection{background:var(--gold-dim);color:#fff;}
+
+/* ===== CUSTOM CURSOR ===== */
+body.has-cursor{cursor:none;}
+body.has-cursor a, body.has-cursor button, body.has-cursor input[type=range]{cursor:none;}
+.cur-dot,.cur-ring{
+  position:fixed;top:0;left:0;pointer-events:none;z-index:9999;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+}
+.cur-dot{width:5px;height:5px;background:var(--gold);}
+.cur-ring{
+  width:32px;height:32px;border:1px solid var(--gold-dim);
+  transition:width .25s,height .25s,border-color .25s,background .25s;
+}
+.cur-ring.active{width:56px;height:56px;border-color:var(--gold);background:rgba(212,162,76,0.06);}
+@media(max-width:900px), (hover:none){.cur-dot,.cur-ring{display:none;}}
+
+/* ===== TILT + GLOW CARDS ===== */
+.tilt{
+  position:relative;
+  transform-style:preserve-3d;
+  will-change:transform;
+  transition:transform .12s ease-out, box-shadow .3s;
+}
+.tilt::after{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(280px circle at var(--mx,50%) var(--my,50%), rgba(212,162,76,0.10), transparent 60%);
+  opacity:0;transition:opacity .3s;
+}
+.tilt:hover::after{opacity:1;}
+.tilt:hover{box-shadow:0 20px 50px -20px rgba(0,0,0,0.6);}
+
+/* magnetic elements */
+.magnet{display:inline-block;will-change:transform;transition:transform .15s ease-out;}
+
+
+/* ===== HERO WATERMARK — horizontal candle band ===== */
+.hero-content{position:relative;z-index:2;}
+
+/* ===== NAV CANDLES — small band right after the "LEDGER" word ===== */
+.brand{display:flex;align-items:center;gap:12px;}
+.nav-candles{width:78px;height:28px;overflow:hidden;flex-shrink:0;}
+.nav-candles svg{width:100%;height:100%;display:block;opacity:0.9;}
+@media(max-width:520px){.nav-candles{width:52px;}}
+
+/* ===== CANDLE RUN — continues the header strip down to Diagnosis ===== */
+.candle-run{
+  position:absolute;z-index:0;pointer-events:none;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom, black 88%, transparent);
+  mask-image:linear-gradient(to bottom, black 88%, transparent);
+}
+.candle-run svg{width:100%;height:100%;display:block;opacity:0.4;}
+@media(max-width:900px){.candle-run{display:none;}}
+
+/* ===== TICKER TAPE ===== */
+.ticker-wrap{
+  position:sticky;top:0;z-index:100;
+  background:#080A0F;
+  border-bottom:1px solid var(--border);
+  overflow:hidden;
+  white-space:nowrap;
+  padding:8px 0;
+}
+.ticker{
+  display:inline-block;
+  padding-left:100%;
+  animation:ticker 32s linear infinite;
+  font-family:'JetBrains Mono',monospace;
+  font-size:12px;
+  letter-spacing:0.02em;
+}
+.ticker span{margin-right:36px;color:var(--muted);}
+.ticker .up{color:var(--profit);}
+.ticker .down{color:var(--loss);}
+@keyframes ticker{0%{transform:translateX(0);}100%{transform:translateX(-100%);}}
+
+/* ===== NAV ===== */
+nav{
+  position:sticky;top:33px;z-index:99;
+  display:flex;justify-content:space-between;align-items:center;
+  padding:16px 5%;
+  background:rgba(11,14,20,0.85);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+}
+.logo{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;letter-spacing:-0.02em;}
+.logo span{color:var(--gold);}
+.navlinks{display:flex;gap:28px;font-size:13px;color:var(--muted);}
+.navlinks a{color:var(--muted);text-decoration:none;transition:color .2s;}
+.navlinks a:hover{color:var(--gold);}
+@media(max-width:768px){.navlinks{display:none;}}
+
+/* ===== HERO ===== */
+.hero{
+  position:relative;z-index:1;
+  min-height:92vh;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:60px 5% 40px;
+  max-width:1280px;margin:0 auto;
+}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);
+  letter-spacing:0.15em;text-transform:uppercase;margin-bottom:18px;
+  display:flex;align-items:center;gap:10px;opacity:0;
+}
+.eyebrow::before{content:"";width:8px;height:8px;background:var(--profit);border-radius:50%;box-shadow:0 0 8px var(--profit);animation:pulse 1.6s infinite;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.3;}}
+h1{
+  font-family:'Space Grotesk',sans-serif;
+  font-weight:700;
+  font-size:clamp(34px,5.6vw,72px);
+  line-height:1.02;letter-spacing:-0.02em;
+  max-width:900px;opacity:0;
+}
+h1 em{font-style:normal;color:var(--gold);}
+.hero-sub{
+  margin-top:22px;font-size:17px;color:var(--muted);max-width:620px;line-height:1.6;opacity:0;
+}
+.hero-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:1px;
+  margin-top:48px;background:var(--border);border:1px solid var(--border);
+  max-width:820px;opacity:0;
+}
+.hero-stats .cell{background:var(--panel);padding:18px 20px;}
+.hero-stats .cell .num{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:700;color:var(--gold);}
+.hero-stats .cell .lbl{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:0.06em;}
+@media(max-width:768px){.hero-stats{grid-template-columns:repeat(2,1fr);}}
+
+/* equity curve */
+/* equity curve — dedicated section */
+.curve-panel{
+  background:var(--panel);border:1px solid var(--border);
+  padding:32px 32px 20px;max-width:820px;
+}
+#curveChart{width:100%;height:auto;display:block;}
+.curve-legend{
+  display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;
+  margin-top:6px;padding-top:16px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted);
+}
+.curve-legend span{display:flex;align-items:center;gap:8px;}
+.curve-legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+.curve-legend b{color:var(--gold);}
+
+/* ===== SECTION SHELL ===== */
+section{position:relative;z-index:1;padding:100px 5%;max-width:1280px;margin:0 auto;}
+.section-head{margin-bottom:56px;max-width:720px;}
+.section-tag{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--gold);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:12px;}
+.section-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(26px,3.4vw,42px);font-weight:700;letter-spacing:-0.01em;line-height:1.1;}
+.section-desc{margin-top:14px;color:var(--muted);font-size:15.5px;line-height:1.65;}
+
+/* ===== DIAGNOSTIC CALLOUT ===== */
+.diagnostic{
+  background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--loss);
+  padding:28px 30px;display:grid;grid-template-columns:1fr 1fr;gap:28px;
+}
+@media(max-width:768px){.diagnostic{grid-template-columns:1fr;}}
+.diagnostic h3{font-family:'Space Grotesk';font-size:16px;margin-bottom:10px;color:var(--loss);}
+.diagnostic p{font-size:14px;color:var(--muted);line-height:1.6;}
+.diagnostic .fix h3{color:var(--profit);}
+
+/* ===== RULES CARD ===== */
+.rules-card{
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  border:1px solid var(--gold-dim);
+  padding:36px;position:relative;
+}
+.rules-card::before{
+  content:"CONTRACT NOTE — NON-NEGOTIABLE";
+  position:absolute;top:-11px;left:30px;background:var(--bg);padding:0 10px;
+  font-family:'JetBrains Mono';font-size:11px;letter-spacing:0.12em;color:var(--gold);
+}
+.rules-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:10px;}
+@media(max-width:900px){.rules-grid{grid-template-columns:repeat(2,1fr);}}
+.rule-item .num{font-family:'JetBrains Mono';font-size:30px;font-weight:700;color:var(--gold);}
+.rule-item .lbl{font-size:13px;color:var(--text);margin-top:6px;font-weight:500;}
+.rule-item .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+
+/* ===== CALCULATOR ===== */
+.calc{
+  background:var(--panel);border:1px solid var(--border);
+  display:grid;grid-template-columns:1fr 1fr;
+}
+@media(max-width:900px){.calc{grid-template-columns:1fr;}}
+.calc-inputs{padding:34px;border-right:1px solid var(--border);}
+@media(max-width:900px){.calc-inputs{border-right:none;border-bottom:1px solid var(--border);}}
+.calc-inputs h3, .calc-out h3{font-family:'Space Grotesk';font-size:16px;margin-bottom:20px;}
+.field{margin-bottom:22px;}
+.field label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:8px;}
+.field label b{color:var(--text);font-family:'JetBrains Mono';}
+input[type=range]{
+  width:100%;accent-color:var(--gold);height:4px;background:var(--border);
+}
+.calc-out{padding:34px;}
+.out-row{display:flex;justify-content:space-between;align-items:baseline;padding:12px 0;border-bottom:1px dashed var(--border);}
+.out-row:last-child{border-bottom:none;}
+.out-row .k{font-size:13px;color:var(--muted);}
+.out-row .v{font-family:'JetBrains Mono';font-size:17px;font-weight:700;}
+.v.profit{color:var(--profit);}
+.v.loss{color:var(--loss);}
+.verdict{margin-top:18px;padding:14px 16px;font-size:13px;border-radius:2px;line-height:1.5;}
+.verdict.good{background:var(--profit-dim);color:var(--profit);border:1px solid rgba(63,182,139,0.3);}
+.verdict.bad{background:var(--loss-dim);color:var(--loss);border:1px solid rgba(229,100,107,0.3);}
+
+/* ===== LEDGER / PHASES ===== */
+.ledger{position:relative;}
+.ledger::before{
+  content:"";position:absolute;left:29px;top:0;bottom:0;width:1px;
+  background:linear-gradient(var(--border),var(--border) 90%,transparent);
+}
+@media(max-width:700px){.ledger::before{left:19px;}}
+.phase{
+  position:relative;padding-left:80px;margin-bottom:8px;
+  opacity:0;
+}
+@media(max-width:700px){.phase{padding-left:52px;}}
+.phase-marker{
+  position:absolute;left:0;top:6px;width:60px;height:60px;
+  background:var(--panel);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'JetBrains Mono';font-size:20px;font-weight:700;color:var(--gold);
+  z-index:2;
+}
+@media(max-width:700px){.phase-marker{width:40px;height:40px;font-size:14px;}}
+.phase-body{
+  background:var(--panel);border:1px solid var(--border);
+  padding:28px 30px;margin-bottom:36px;
+  transition:border-color .25s;
+}
+.phase-body:hover{border-color:var(--gold-dim);}
+.phase-top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px 20px;flex-wrap:wrap;margin-bottom:14px;}
+.phase-title{font-family:'Space Grotesk';font-size:20px;font-weight:600;line-height:1.3;flex:1 1 260px;min-width:0;}
+.phase-dur{font-family:'JetBrains Mono';font-size:11.5px;color:var(--gold);border:1px solid var(--gold-dim);padding:4px 10px;white-space:nowrap;flex-shrink:0;margin-top:3px;}
+.phase-focus{font-size:14px;color:var(--muted);margin-bottom:22px;line-height:1.6;}
+.phase-cols{display:grid;grid-template-columns:repeat(3, minmax(0,1fr));gap:28px;align-items:start;}
+@media(max-width:1000px){.phase-cols{grid-template-columns:1fr 1fr;}}
+@media(max-width:620px){.phase-cols{grid-template-columns:1fr;}}
+.phase-cols > div{
+  padding-left:20px;border-left:1px solid var(--border);min-width:0;
+}
+.phase-cols > div:first-child{padding-left:0;border-left:none;}
+@media(max-width:1000px){
+  .phase-cols > div:nth-child(2){padding-left:20px;border-left:1px solid var(--border);}
+  .phase-cols > div:nth-child(3){padding-left:0;border-left:none;margin-top:18px;grid-column:1 / -1;border-top:1px solid var(--border);padding-top:18px;}
+}
+@media(max-width:620px){
+  .phase-cols > div{padding-left:0 !important;border-left:none !important;margin-top:0 !important;}
+  .phase-cols > div:not(:first-child){border-top:1px solid var(--border);padding-top:16px;margin-top:16px !important;}
+}
+.pc-label{
+  display:flex;align-items:center;gap:8px;
+  font-size:11px;text-transform:uppercase;letter-spacing:0.08em;color:var(--gold);
+  margin-bottom:12px;font-weight:600;padding-bottom:8px;border-bottom:1px solid var(--border);
+}
+.pc-list{list-style:none;font-size:13.5px;color:var(--text);}
+.pc-list li{
+  padding:7px 8px 7px 22px;margin-left:-8px;border-radius:3px;position:relative;color:#C7CCD8;line-height:1.5;
+  overflow-wrap:break-word;transition:padding-left .2s ease,color .2s ease,background .2s ease;
+}
+.pc-list li:hover{padding-left:26px;color:var(--text);background:rgba(212,162,76,0.06);}
+.pc-list li::before{
+  content:"";position:absolute;left:2px;top:13px;width:7px;height:7px;
+  transition:transform .2s ease,box-shadow .2s ease;
+}
+.pc-list li:hover::before{transform:scale(1.25);}
+/* Cover column — solid gold diamond */
+.phase-cols > div:nth-child(1) .pc-list li::before{
+  background:var(--gold);transform:rotate(45deg);border-radius:1px;
+}
+.phase-cols > div:nth-child(1) .pc-list li:hover::before{transform:rotate(45deg) scale(1.3);box-shadow:0 0 6px rgba(212,162,76,0.6);}
+/* Resources column — hollow ring (external reference) */
+.phase-cols > div:nth-child(2) .pc-list li::before{
+  border:1.5px solid var(--gold);border-radius:50%;background:transparent;
+}
+.phase-cols > div:nth-child(2) .pc-list li:hover::before{background:var(--gold);box-shadow:0 0 6px rgba(212,162,76,0.6);}
+/* Tools column — solid teal dot */
+.phase-cols > div:nth-child(3) .pc-list li::before{
+  background:var(--profit);border-radius:50%;opacity:0.85;
+}
+.phase-cols > div:nth-child(3) .pc-list li:hover::before{opacity:1;box-shadow:0 0 6px rgba(63,182,139,0.6);}
+.pc-list a{color:var(--gold);text-decoration:none;border-bottom:1px dotted var(--gold-dim);word-break:break-word;}
+.pc-list a:hover{border-bottom-style:solid;}
+.grad{
+  margin-top:18px;padding:12px 16px;background:var(--profit-dim);
+  border-left:2px solid var(--profit);font-size:12.5px;color:#B9E8D6;line-height:1.55;
+}
+.grad b{color:var(--profit);}
+
+/* ===== FOOTER ===== */
+footer{
+  border-top:1px solid var(--border);padding:50px 5%;text-align:center;
+  color:var(--muted);font-size:13px;position:relative;z-index:1;
+}
+footer .logo{justify-content:center;display:flex;margin-bottom:10px;}
+
+.reveal{opacity:0;transform:translateY(24px);}
+
+/* ===== SIDE NAV (left rail) ===== */
+.side-nav{
+  position:fixed;left:24px;top:128px;
+  z-index:60;display:flex;flex-direction:column;gap:19px;
+}
+.side-nav a{
+  display:flex;align-items:center;gap:10px;text-decoration:none;
+  font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em;
+  color:var(--muted);text-transform:uppercase;white-space:nowrap;
+}
+.side-nav a .dot{
+  width:7px;height:7px;border-radius:50%;flex-shrink:0;
+  background:var(--bg);border:1px solid var(--gold-dim);
+  transition:background .25s,box-shadow .25s,border-color .25s;
+}
+.side-nav a:hover, .side-nav a.active{color:var(--gold);}
+.side-nav a:hover .dot, .side-nav a.active .dot{
+  background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(212,162,76,0.7);
+}
+@media(max-width:1150px){.side-nav{display:none;}}
+
+/* ===== PLAYBOOK PANEL (desk-brochure reference) ===== */
+.playbook-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+@media(max-width:900px){.playbook-grid{grid-template-columns:1fr;}}
+.pb-card{background:var(--panel);border:1px solid var(--border);padding:28px 30px;}
+.pb-card.full{grid-column:1 / -1;}
+.pb-card h3{font-family:'Space Grotesk',sans-serif;font-size:16.5px;margin-bottom:6px;color:var(--gold);}
+.pb-card .pb-sub{font-size:12.5px;color:var(--muted);margin-bottom:18px;line-height:1.55;}
+.pb-list{list-style:none;counter-reset:pbcounter;font-size:13px;color:#C7CCD8;}
+.pb-list li{
+  counter-increment:pbcounter;padding:6px 0 6px 26px;position:relative;line-height:1.5;
+}
+.pb-list li::before{
+  content:counter(pbcounter);position:absolute;left:0;top:6px;color:var(--gold);
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+}
+.pb-list.two-col{column-count:2;column-gap:26px;}
+.pb-list.two-col li{break-inside:avoid;}
+
+.pb-quotes{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+@media(max-width:520px){.pb-quotes{grid-template-columns:1fr;}}
+.pb-quote{
+  background:var(--panel-2);border-left:2px solid var(--gold-dim);
+  padding:10px 14px;font-size:12px;color:#C7CCD8;line-height:1.5;
+}
+
+.reframe-quote{font-size:13px;color:var(--muted);font-style:italic;margin-bottom:18px;line-height:1.6;}
+.reframe-quote b{color:var(--text);font-style:normal;}
+.reframe-table{width:100%;border-collapse:collapse;font-size:12.5px;}
+.reframe-table th{
+  text-align:left;padding:9px 12px;color:var(--muted);font-size:10.5px;
+  text-transform:uppercase;letter-spacing:0.07em;border-bottom:1px solid var(--border);
+}
+.reframe-table th.pos-h{color:var(--profit);}
+.reframe-table th.neg-h{color:var(--loss);}
+.reframe-table td{padding:10px 12px;border-bottom:1px dashed var(--border);vertical-align:top;line-height:1.5;}
+.reframe-table td.neg{color:#D89EA1;width:38%;}
+.reframe-table td.pos{color:#A9DFC9;}
+.reframe-table tr:last-child td{border-bottom:none;}
+
+.pb-source{margin-top:14px;font-size:11.5px;color:var(--muted);}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation:none !important;transition:none !important;}
+}
+</style>
+</head>
+<body>
+
+<div class="cur-dot" id="curDot"></div>
+<div class="cur-ring" id="curRing"></div>
+<div class="candle-run" id="candleRun" aria-hidden="true"></div>
+
+<div class="ticker-wrap">
+  <div class="ticker mono" id="tickerText"></div>
+</div>
+
+<nav>
+  <div class="brand">
+    <div class="logo">THE <span>BREAKEVEN</span> LEDGER</div>
+    <div class="nav-candles" id="navCandles" aria-hidden="true"></div>
+  </div>
+  <div class="navlinks">
+    <a class="magnet" href="#diagnostic">Diagnosis</a>
+    <a class="magnet" href="#rules">Rules</a>
+    <a class="magnet" href="#calculator">Edge Calculator</a>
+    <a class="magnet" href="#roadmap">Roadmap</a>
+  </div>
+</nav>
+
+<div class="side-nav" id="sideNav" aria-hidden="true">
+  <a href="#diagnostic"><span class="dot"></span><span class="lbl">Diagnosis</span></a>
+  <a href="#rules"><span class="dot"></span><span class="lbl">Rules</span></a>
+  <a href="#calculator"><span class="dot"></span><span class="lbl">Edge Calculator</span></a>
+  <a href="#curve-section"><span class="dot"></span><span class="lbl">Compounding</span></a>
+  <a href="#roadmap"><span class="dot"></span><span class="lbl">Roadmap</span></a>
+  <a href="#playbook"><span class="dot"></span><span class="lbl">Playbook</span></a>
+</div>
+
+<section class="hero">
+  <div class="hero-content">
+    <div class="eyebrow" id="eyebrow">SESSION LOG · YEAR 1 COMPLETE · STATUS: BREAKEVEN</div>
+    <h1 id="h1title">From breakeven <em>to a business</em> —<br>a 9-month desk plan.</h1>
+    <p class="hero-sub" id="herosub">You already have the hardest part: a full year of real fills, real losses, and a working setup. What's missing isn't a new indicator — it's a system that caps overtrading, enforces 1:2 reward-to-risk, and compounds ₹1,00,000 at a sane 3–5% a month instead of chasing it back in one trade.</p>
+
+    <div class="hero-stats" id="herostats">
+      <div class="cell"><div class="num">₹1,00,000</div><div class="lbl">Starting capital</div></div>
+      <div class="cell"><div class="num">3–5%</div><div class="lbl">Monthly target</div></div>
+      <div class="cell"><div class="num">3</div><div class="lbl">Max trades / day</div></div>
+      <div class="cell"><div class="num">1:2</div><div class="lbl">Min risk : reward</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="curve-section">
+  <div class="section-head reveal">
+    <div class="section-tag">// What the target actually compounds into</div>
+    <div class="section-title">₹1,00,000, compounding monthly, nine months out.</div>
+    <div class="section-desc">Bars are plotted at a steady 4% a month — the midpoint of your 3–5% target — so you can see month-by-month where the account should sit if the rules hold. At the edges of the range: ₹1,30,477 by month 9 at a flat 3%, or ₹1,55,133 at a flat 5%.</div>
+  </div>
+  <div class="curve-panel reveal">
+    <div id="curveChart"></div>
+    <div class="curve-legend">
+      <span><i style="background:var(--gold)"></i> Capital at 4%/mo (target midpoint)</span>
+      <span class="curve-range">Range across the month: <b class="mono">₹1,30,477 – ₹1,55,133</b></span>
+    </div>
+  </div>
+</section>
+
+<section id="diagnostic">
+  <div class="section-head reveal">
+    <div class="section-tag">// Why breakeven happens</div>
+    <div class="section-title">Breakeven is a discipline problem, not a strategy problem.</div>
+    <div class="section-desc">After a year in F&O, most traders who are flat have a working edge somewhere in their entries. What eats the edge is what happens around the trade — size, frequency, and exits. This roadmap is sequenced to fix that order first.</div>
+  </div>
+  <div class="diagnostic reveal">
+    <div class="leak">
+      <h3>The leak</h3>
+      <p><b>Overtrading:</b> taking a 4th or 5th "setup" after the plan for the day is done, usually to recover a loss or boredom-trade a flat market.</p>
+      <p style="margin-top:14px;"><b>Weak entry/exit:</b> entering before confirmation, then exiting winners early on fear and losers late on hope — which quietly inverts your risk:reward.</p>
+    </div>
+    <div class="fix">
+      <h3>The fix in this roadmap</h3>
+      <p><b>Hard trade cap:</b> 3 trades/day is a circuit breaker, enforced in Phase 2 before any strategy work continues.</p>
+      <p style="margin-top:14px;"><b>Rule-based exits:</b> Phase 5 replaces feel-based exits with a written checklist, so 1:2 becomes the floor, not the exception.</p>
+    </div>
+  </div>
+</section>
+
+<section id="rules">
+  <div class="section-head reveal">
+    <div class="section-tag">// The desk rules</div>
+    <div class="section-title">Print this. Pin it above your monitor.</div>
+    <div class="section-desc">Every phase below assumes these four numbers are already fixed. They don't change as your account grows — only your position size does.</div>
+  </div>
+  <div class="rules-card reveal tilt">
+    <div class="rules-grid">
+      <div class="rule-item"><div class="num">≤ 3</div><div class="lbl">Trades per day</div><div class="sub">4th signal = no trade, not a bigger trade</div></div>
+      <div class="rule-item"><div class="num">1–2%</div><div class="lbl">Risk per trade</div><div class="sub">₹1,000–₹2,000 max loss on ₹1L capital</div></div>
+      <div class="rule-item"><div class="num">1 : 2</div><div class="lbl">Min reward : risk</div><div class="sub">No trade taken without this ratio planned in advance</div></div>
+      <div class="rule-item"><div class="num">6%</div><div class="lbl">Daily loss limit</div><div class="sub">Two full stop-outs = flat screens, session over</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="calculator">
+  <div class="section-head reveal">
+    <div class="section-tag">// The math behind "3–5% a month"</div>
+    <div class="section-title">Your edge calculator</div>
+    <div class="section-desc">At 1:2 reward-to-risk, you don't need to win most of your trades — you need to win roughly a third of them. Drag the win-rate slider and watch what happens to the target.</div>
+  </div>
+  <div class="calc reveal">
+    <div class="calc-inputs tilt">
+      <h3>Inputs</h3>
+      <div class="field">
+        <label>Capital <b id="capOut">₹1,00,000</b></label>
+        <input type="range" id="capIn" min="50000" max="500000" step="10000" value="100000">
+      </div>
+      <div class="field">
+        <label>Risk per trade (% of capital) <b id="riskPctOut">1.5%</b></label>
+        <input type="range" id="riskPctIn" min="0.5" max="3" step="0.1" value="1.5">
+      </div>
+      <div class="field">
+        <label>Reward : Risk ratio <b id="rrOut">1 : 2</b></label>
+        <input type="range" id="rrIn" min="1" max="4" step="0.5" value="2">
+      </div>
+      <div class="field">
+        <label>Win rate <b id="wrOut">38%</b></label>
+        <input type="range" id="wrIn" min="20" max="70" step="1" value="38">
+      </div>
+      <div class="field">
+        <label>Trades per day (max 3) <b id="tpdOut">3</b></label>
+        <input type="range" id="tpdIn" min="1" max="3" step="1" value="3">
+      </div>
+    </div>
+    <div class="calc-out tilt">
+      <h3>Monthly outcome (≈20 trading days)</h3>
+      <div class="out-row"><div class="k">Risk per trade</div><div class="v" id="outRisk">₹1,500</div></div>
+      <div class="out-row"><div class="k">Reward per winning trade</div><div class="v profit" id="outReward">₹3,000</div></div>
+      <div class="out-row"><div class="k">Expectancy per trade</div><div class="v" id="outExp">₹—</div></div>
+      <div class="out-row"><div class="k">Trades this month</div><div class="v" id="outTrades">60</div></div>
+      <div class="out-row"><div class="k">Projected monthly P&L</div><div class="v" id="outMonthly">₹—</div></div>
+      <div class="out-row"><div class="k">As % of capital</div><div class="v" id="outPct">—</div></div>
+      <div class="verdict good" id="verdict">Breakeven win rate at this R:R is 33.3% — you're above it.</div>
+    </div>
+  </div>
+</section>
+
+<section id="roadmap">
+  <div class="section-head reveal">
+    <div class="section-tag">// 9-month desk plan</div>
+    <div class="section-title">The roadmap: fundamentals → advanced</div>
+    <div class="section-desc">Each stage has a graduation criterion. You don't move on because a month has passed — you move on because your trade journal proves the rule is now automatic.</div>
+  </div>
+
+  <div class="ledger">
+
+    <!-- PHASE 1 -->
+    <div class="phase">
+      <div class="phase-marker magnet">01</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Foundation Audit</div>
+          <div class="phase-dur">Weeks 1–2</div>
+        </div>
+        <div class="phase-focus">You've traded a year, so this isn't "learn what F&O is" — it's a hard reset on mechanics you may have half-learned from screens and forums: contract specs, margin (SPAN + exposure), settlement, and exactly how your broker's order types behave under fast moves.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Futures vs options mechanics, lot sizes, expiry cycles</li>
+              <li>SPAN + exposure margin, and margin calls on your broker</li>
+              <li>Order types: SL-M vs SL-L, and slippage in fast markets</li>
+              <li>Audit your last 100 trades: tag each as rule-based or impulse</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/" target="_blank">Zerodha Varsity — Futures &amp; Options modules</a></li>
+              <li><a href="https://www.nseindia.com/" target="_blank">NSE India — official F&O contract specs</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=NSE+F%26O+margin+explained+India" target="_blank">Video: NSE F&O margin explained</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>Your broker's contract note + margin calculator</li>
+              <li>A spreadsheet or journal to log all trades from Phase 2 onward</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> you can state your exact margin requirement and worst-case loss for any position before placing it, without checking a calculator mid-trade.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 2 -->
+    <div class="phase">
+      <div class="phase-marker magnet">02</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Risk Management Bedrock</div>
+          <div class="phase-dur">Weeks 3–5</div>
+        </div>
+        <div class="phase-focus">This is the phase that actually fixes breakeven. Before any new strategy work, position sizing and the daily trade cap get installed as hard rules, not guidelines.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Position sizing from stop-loss distance, not from "feel"</li>
+              <li>Fixed fractional risk: 1–2% of ₹1,00,000 per trade</li>
+              <li>Daily loss limit (2 stop-outs = done) and weekly drawdown cap</li>
+              <li>The 3-trades/day rule as a circuit breaker, not a target</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/chapter/position-sizing/" target="_blank">Zerodha Varsity — Position sizing</a></li>
+              <li><a href="https://www.investopedia.com/articles/trading/09/risk-management.asp" target="_blank">Investopedia — Risk management essentials</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=position+sizing+risk+management+options+trading+india" target="_blank">Video: position sizing for options traders</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>Use the Edge Calculator above with your real risk% and R:R</li>
+              <li>Pre-trade checklist template (size, stop, target, R:R written before entry)</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> 20 straight trading days with zero trades exceeding 2% risk, and zero days above 3 trades.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 3 -->
+    <div class="phase">
+      <div class="phase-marker magnet">03</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Trading Psychology &amp; Overtrading Control</div>
+          <div class="phase-dur">Weeks 6–8</div>
+        </div>
+        <div class="phase-focus">The rules from Phase 2 will break under emotional pressure unless you can name the pressure. This phase builds the journal habit and the vocabulary to catch revenge trading and FOMO before the order goes in.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Revenge trading, FOMO entries, and boredom trades — spot the pattern in your own log</li>
+              <li>Pre-market routine and a hard "no-trade" list (news days, low conviction)</li>
+              <li>Daily journal: entry reason, emotion at entry, emotion at exit</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/chapter/trading-psychology/" target="_blank">Zerodha Varsity — Trading psychology</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=overtrading+psychology+trading+discipline" target="_blank">Video: why traders overtrade</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=trading+journal+how+to+keep+india" target="_blank">Video: how to keep a trading journal</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>A journal template with an emotion column, not just P&L</li>
+              <li>Weekly review: count impulse trades vs planned trades</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> a full month's journal shows every trade matched a written setup — no unplanned entries.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 4 -->
+    <div class="phase">
+      <div class="phase-marker magnet">04</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Strategy &amp; Edge Development</div>
+          <div class="phase-dur">Weeks 9–14</div>
+        </div>
+        <div class="phase-focus">Now — and only now — refine the actual entries. Pick one or two setups you can define in one sentence, and prove them on paper before real size.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Price action: support/resistance, trend structure, volume confirmation</li>
+              <li>Pick ONE primary setup (e.g. breakout-retest or trend pullback) and define entry, stop, target rules precisely</li>
+              <li>Backtest 100+ historical instances of that setup by hand</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/chapter/technical-analysis/" target="_blank">Zerodha Varsity — Technical analysis module</a></li>
+              <li><a href="https://www.tradingview.com/" target="_blank">TradingView — charting &amp; replay for backtesting</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=price+action+trading+strategy+nifty+banknifty" target="_blank">Video: price action strategy for Nifty/BankNifty</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>TradingView bar replay for manual backtesting</li>
+              <li>A one-page "setup sheet": conditions, entry trigger, invalidation</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> your hand-backtest shows a positive expectancy at 1:2+ R:R across at least 100 samples.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 5 -->
+    <div class="phase">
+      <div class="phase-marker magnet">05</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Execution Discipline</div>
+          <div class="phase-dur">Weeks 15–18</div>
+        </div>
+        <div class="phase-focus">This is where "deep things like entry/exit" get solved directly — by removing discretion from the exit and replacing it with a checklist executed at small size.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Entry checklist: trigger candle, confirmation, no chasing extended moves</li>
+              <li>Exit rules fixed BEFORE entry — stop and target as actual GTT/SL orders, not mental levels</li>
+              <li>Partial booking rules if used (e.g. book half at 1:1, trail rest to 1:2+)</li>
+              <li>Live trading resumes at 25–30% of normal size while rules bed in</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/chapter/setting-stop-loss/" target="_blank">Zerodha Varsity — Stop-loss placement</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=entry+exit+rules+options+trading+checklist" target="_blank">Video: building an entry/exit checklist</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>Bracket / GTT orders so stop and target are placed with the entry, not after</li>
+              <li>Printed checklist taped to your monitor for the first 3 weeks</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> 4 straight weeks with every exit matching the pre-set stop or target — no manual override.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 6 -->
+    <div class="phase">
+      <div class="phase-marker magnet">06</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Scaling to Consistency</div>
+          <div class="phase-dur">Weeks 19–26</div>
+        </div>
+        <div class="phase-focus">With rules holding under real trades, scale size gradually and start tracking the metrics that actually predict the 3–5% monthly target: win rate, average R:R, and expectancy.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Scale from 30% → 60% → 100% of target size, one step per profitable fortnight</li>
+              <li>Track win rate and realised R:R weekly against the Edge Calculator assumptions</li>
+              <li>Build a simple monthly P&L statement like a small business, not a gamble</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/chapter/expectancy/" target="_blank">Zerodha Varsity — Trading expectancy</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=trading+expectancy+win+rate+risk+reward" target="_blank">Video: expectancy, win rate and R:R explained</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>Monthly scorecard: trades, win rate, avg R:R, expectancy, drawdown</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> 3 consecutive profitable months landing inside the 3–5% band without breaching the daily loss limit.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 7 -->
+    <div class="phase">
+      <div class="phase-marker magnet">07</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Advanced Mastery — Options Greeks &amp; Structures</div>
+          <div class="phase-dur">Month 7–8</div>
+        </div>
+        <div class="phase-focus">Only add complexity once single-leg directional trading is consistently profitable. This phase layers in Greeks-aware trading and defined-risk multi-leg structures.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Delta, theta, vega, gamma — how each moves your P&L intraday and near expiry</li>
+              <li>IV rank/percentile and why buying options in high IV hurts your edge</li>
+              <li>Defined-risk spreads: bull/bear spreads, iron condors for range days</li>
+              <li>Hedging a directional bet with a cheap opposite-side option</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/module/option-theory/" target="_blank">Zerodha Varsity — Option Theory module</a></li>
+              <li><a href="https://sensibull.com/" target="_blank">Sensibull — options strategy builder &amp; payoff analysis</a></li>
+              <li><a href="https://opstra.definedge.com/" target="_blank">Opstra — options analytics &amp; backtesting</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=option+greeks+explained+delta+theta+vega+gamma+india" target="_blank">Video: option Greeks explained</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>Options chain with live Greeks (Sensibull / broker terminal)</li>
+              <li>Payoff diagram tool before entering any multi-leg structure</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> you can explain, before entry, exactly how theta and IV will affect a spread's P&L by expiry — not just the direction bet.</div>
+      </div>
+    </div>
+
+    <!-- PHASE 8 -->
+    <div class="phase">
+      <div class="phase-marker magnet">08</div>
+      <div class="phase-body tilt">
+        <div class="phase-top">
+          <div class="phase-title">Running It as a Business</div>
+          <div class="phase-dur">Month 9+</div>
+        </div>
+        <div class="phase-focus">Profitability without systemisation decays. The last stage turns the roadmap into a repeating cycle: review, refine, re-certify against your own rules.</div>
+        <div class="phase-cols">
+          <div>
+            <div class="pc-label">Cover</div>
+            <ul class="pc-list">
+              <li>Quarterly strategy review: which setups are actually earning their keep</li>
+              <li>Capital allocation as account grows — when to raise risk% vs add capital</li>
+              <li>F&O taxation basics (business income, turnover, audit thresholds) and record-keeping</li>
+              <li>A written "trading business plan" reviewed every quarter</li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Resources</div>
+            <ul class="pc-list">
+              <li><a href="https://zerodha.com/varsity/module/taxation-for-traders/" target="_blank">Zerodha Varsity — Taxation for traders</a></li>
+              <li><a href="https://investor.sebi.gov.in/" target="_blank">SEBI Investor Education</a></li>
+              <li><a href="https://www.youtube.com/results?search_query=fno+trading+taxation+india+turnover+audit" target="_blank">Video: F&O taxation and turnover rules</a></li>
+            </ul>
+          </div>
+          <div>
+            <div class="pc-label">Tools</div>
+            <ul class="pc-list">
+              <li>Quarterly scorecard review against Phase 6 metrics</li>
+              <li>A CA familiar with F&O turnover once volumes grow</li>
+            </ul>
+          </div>
+        </div>
+        <div class="grad"><b>Graduate when:</b> the system runs without you needing willpower to follow it — it's just how you trade.</div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section id="playbook">
+  <div class="section-head reveal">
+    <div class="section-tag">// From the printed desk brochure</div>
+    <div class="section-title">The playbook: rules, mindset &amp; affirmations</div>
+    <div class="section-desc">Four sheets from a trading-hub brochure worth keeping close — the techniques back up the risk rules above, and the mindset material backs up Phase 3. Reproduced here so it lives in the same place as the rest of your system.</div>
+  </div>
+
+  <div class="playbook-grid">
+    <div class="pb-card reveal tilt">
+      <h3>21 Techniques to Become a Profitable Trader</h3>
+      <ol class="pb-list two-col">
+        <li>Acquire knowledge from a trusted source</li>
+        <li>In initial times, expect only 50% accuracy</li>
+        <li>Take a minimum profit of 1:2 (risk to reward ratio)</li>
+        <li>Create rules (SOP)</li>
+        <li>Always use verified and tested strategies</li>
+        <li>Back-test your strategy</li>
+        <li>Practice your system 100 times, so you can trust it</li>
+        <li>Trade only your system, not emotion — trade like a robot</li>
+        <li>We can understand only 10% of the market</li>
+        <li>Master risk management with only 2.5% risk per trade</li>
+        <li>Never blame the market — take responsibility for your decisions</li>
+        <li>Cut losses quickly and let profits run</li>
+        <li>Keep a trading journal</li>
+        <li>Avoid full-capacity trades</li>
+        <li>Join a trading community</li>
+        <li>1 to 3 trades daily is the best strategy for success</li>
+        <li>Focus on one strategy at a time</li>
+        <li>Stay disciplined, stay consistent &amp; patient</li>
+        <li>Avoid FOMO (fear of missing out)</li>
+        <li>Trade only in high-probability setups</li>
+        <li>Learn from other's mistakes</li>
+      </ol>
+    </div>
+
+    <div class="pb-card reveal tilt">
+      <h3>Trader's DNA</h3>
+      <div class="pb-sub">Mindset lines worth reading before the market opens.</div>
+      <div class="pb-quotes">
+        <div class="pb-quote">"I am an awesome trader."</div>
+        <div class="pb-quote">"Committed people always win."</div>
+        <div class="pb-quote">"If one can do it, even I can do it."</div>
+        <div class="pb-quote">"If trading is more important than a party, welcome to the 1% club."</div>
+        <div class="pb-quote">"Hustle until your money makes money for you."</div>
+        <div class="pb-quote">"The secret of your future is hidden in your daily routine."</div>
+        <div class="pb-quote">"Great things never come from comfort zones."</div>
+        <div class="pb-quote">"Trade your plan, not your emotion."</div>
+        <div class="pb-quote">"Trading is: 10% buying, 10% selling, 80% waiting."</div>
+        <div class="pb-quote">"Actually, the best traders have no ego."</div>
+        <div class="pb-quote">"Rule of success: never give up, keep on trading."</div>
+        <div class="pb-quote">"Trade while others sleep, learn while others party, save while others spend, live a life like your dream."</div>
+        <div class="pb-quote">"No one is born a great trader — one learns by trading. It's an acquired skill."</div>
+        <div class="pb-quote">"The key to success in trading is emotional discipline."</div>
+        <div class="pb-quote">"Every day is not a trade day — some are rest days."</div>
+      </div>
+    </div>
+
+    <div class="pb-card full reveal tilt">
+      <h3>Change Your Words, Change Your Life</h3>
+      <div class="reframe-quote">"Don't speak negatively about yourself, even as a joke. Your body doesn't know the difference." — <b>Bruce Lee</b></div>
+      <table class="reframe-table">
+        <thead>
+          <tr><th class="neg-h">Negative sentence</th><th class="pos-h">Replace with</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="neg">"Market is like gambling."</td><td class="pos">The market rewards those who make informed and strategic decisions.</td></tr>
+          <tr><td class="neg">"I always lose money in the market."</td><td class="pos">I am learning to improve my trading strategies.</td></tr>
+          <tr><td class="neg">"Trading is too hard for me."</td><td class="pos">Trading is a skill I can develop with practice and patience.</td></tr>
+          <tr><td class="neg">"I can't handle market volatility."</td><td class="pos">Volatility creates opportunities for smart investors.</td></tr>
+          <tr><td class="neg">"I let my emotions control my trades."</td><td class="pos">I have improved my emotional discipline in trading.</td></tr>
+          <tr><td class="neg">"The market is crashing and I'm going to lose everything."</td><td class="pos">Market corrections create great buying opportunities.</td></tr>
+          <tr><td class="neg">"I always pick the wrong stocks."</td><td class="pos">I am improving my stock selection with research and analysis.</td></tr>
+          <tr><td class="neg">"I don't know when to enter or exit a trade."</td><td class="pos">I am working on refining my entry and exit strategies.</td></tr>
+          <tr><td class="neg">"The market is against me."</td><td class="pos">I adapt to market conditions and find opportunities.</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="pb-card full reveal tilt">
+      <h3>Daily Affirmations</h3>
+      <ol class="pb-list two-col">
+        <li>I am a disciplined and confident trader.</li>
+        <li>I trade with a clear and focused mind.</li>
+        <li>Every trade is a learning opportunity for growth.</li>
+        <li>I follow my trading plan with patience and precision.</li>
+        <li>I trust my analysis and make well-informed decisions.</li>
+        <li>I manage my risk wisely and protect my capital.</li>
+        <li>I remain calm and composed in all market conditions.</li>
+        <li>Losses are just stepping stones to my success.</li>
+        <li>I attract profitable trades with a strong mindset.</li>
+        <li>I embrace the process and focus on long-term success.</li>
+        <li>I adapt to market changes with ease and confidence.</li>
+        <li>I stay disciplined and avoid impulsive trades.</li>
+        <li>I trade with a winning attitude and patience.</li>
+        <li>I believe in my ability to grow my wealth.</li>
+        <li>I have gained financial freedom through trading.</li>
+      </ol>
+    </div>
+  </div>
+  <div class="pb-source">Source: printed brochure, Indian Trader's Academy (@itapcmc) — reproduced here for your own reference.</div>
+</section>
+
+<footer>
+  <div class="logo">THE <span>BREAKEVEN</span> LEDGER</div>
+  <div>Educational roadmap only — not investment advice. F&O trading carries substantial risk of loss. Size accordingly.</div>
+</footer>
+
+<script>
+// ticker content
+const tickerItems = [
+  ['CAPITAL', '₹1,00,000', 'up'],
+  ['TARGET/MO', '3–5%', 'up'],
+  ['MAX TRADES/DAY', '3', ''],
+  ['MIN R:R', '1 : 2', 'up'],
+  ['RISK/TRADE', '1–2%', ''],
+  ['DAILY LOSS CAP', '6%', 'down'],
+  ['BREAKEVEN WIN RATE @1:2', '33.3%', ''],
+  ['PHASE', '01 / 08', 'up'],
+];
+const tickerEl = document.getElementById('tickerText');
+let html = '';
+for(let i=0;i<3;i++){
+  tickerItems.forEach(it=>{
+    html += `<span>${it[0]}: <b class="${it[2]}">${it[1]}</b></span>`;
+  });
+}
+tickerEl.innerHTML = html;
+
+// hero entrance
+gsap.timeline({defaults:{ease:'power3.out'}})
+  .to('#eyebrow',{opacity:1,y:0,duration:.6})
+  .to('#h1title',{opacity:1,duration:.8},'-=.3')
+  .to('#herosub',{opacity:1,duration:.8},'-=.5')
+  .to('#herostats',{opacity:1,duration:.8},'-=.5');
+
+// scroll reveals
+gsap.registerPlugin(ScrollTrigger);
+document.querySelectorAll('.reveal').forEach(el=>{
+  gsap.to(el,{
+    opacity:1,y:0,duration:.8,ease:'power2.out',
+    scrollTrigger:{trigger:el,start:'top 85%'}
+  });
+});
+
+// ===== EQUITY BAR CHART — ₹1,00,000 compounding at 4%/mo, month by month =====
+(function(){
+  const mount = document.getElementById('curveChart');
+  if(!mount) return;
+  const svgNS = 'http://www.w3.org/2000/svg';
+
+  // month-by-month capital at a flat 4%/mo (the midpoint of the 3-5% target)
+  const values = [];
+  let v = 100000;
+  values.push(Math.round(v));
+  for(let m=1;m<=9;m++){ v *= 1.04; values.push(Math.round(v)); }
+
+  const W=680, H=320, padL=76, padR=14, padT=20, padB=34;
+  const chartW = W-padL-padR, chartH = H-padT-padB;
+  const yMin=95000, yMax=145000;
+  const yFor = val => padT + chartH - ((val-yMin)/(yMax-yMin))*chartH;
+  const barSlot = chartW/values.length;
+  const barW = barSlot*0.56;
+
+  const svg = document.createElementNS(svgNS,'svg');
+  svg.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svg.setAttribute('preserveAspectRatio','none');
+  mount.appendChild(svg);
+
+  // gridlines + y labels
+  [100000,110000,120000,130000,140000].forEach(gv=>{
+    const gy = yFor(gv);
+    const line = document.createElementNS(svgNS,'line');
+    line.setAttribute('x1',padL); line.setAttribute('x2',W-padR);
+    line.setAttribute('y1',gy); line.setAttribute('y2',gy);
+    line.setAttribute('stroke','#232B3D'); line.setAttribute('stroke-width','1');
+    if(gv!==100000) line.setAttribute('stroke-dasharray','4 4');
+    svg.appendChild(line);
+    const lbl = document.createElementNS(svgNS,'text');
+    lbl.setAttribute('x',padL-10); lbl.setAttribute('y',gy+4);
+    lbl.setAttribute('text-anchor','end');
+    lbl.setAttribute('fill','#8892A6'); lbl.setAttribute('font-family','JetBrains Mono');
+    lbl.setAttribute('font-size','10.5');
+    lbl.textContent = '₹'+(gv/100000).toFixed(1).replace('.0','')+'L';
+    svg.appendChild(lbl);
+  });
+
+  const bars=[];
+  values.forEach((val,i)=>{
+    const x = padL + i*barSlot + (barSlot-barW)/2;
+    const baseY = yFor(yMin);
+    const targetY = yFor(val);
+
+    const bar = document.createElementNS(svgNS,'rect');
+    bar.setAttribute('x',x); bar.setAttribute('width',barW);
+    bar.setAttribute('y',baseY); bar.setAttribute('height',0);
+    bar.setAttribute('rx','2');
+    bar.setAttribute('fill', i===values.length-1 ? '#3FB68B' : '#D4A24C');
+    bar.setAttribute('opacity', i===values.length-1 ? '1' : '0.85');
+    svg.appendChild(bar);
+    bars.push({bar, baseY, targetY, height: baseY-targetY});
+
+    // month tick label
+    const mLbl = document.createElementNS(svgNS,'text');
+    mLbl.setAttribute('x', x+barW/2); mLbl.setAttribute('y', H-12);
+    mLbl.setAttribute('text-anchor','middle');
+    mLbl.setAttribute('fill','#8892A6'); mLbl.setAttribute('font-family','JetBrains Mono');
+    mLbl.setAttribute('font-size','10.5');
+    mLbl.textContent = 'M'+i;
+    svg.appendChild(mLbl);
+
+    // value label only on first, mid and last bar to avoid clutter
+    if(i===0 || i===Math.round(values.length/2) || i===values.length-1){
+      const vLbl = document.createElementNS(svgNS,'text');
+      vLbl.setAttribute('x', x+barW/2); vLbl.setAttribute('y', targetY-8);
+      vLbl.setAttribute('text-anchor','middle');
+      vLbl.setAttribute('fill', i===values.length-1 ? '#3FB68B' : '#E8EAEF');
+      vLbl.setAttribute('font-family','JetBrains Mono'); vLbl.setAttribute('font-weight','700');
+      vLbl.setAttribute('font-size','11');
+      vLbl.setAttribute('opacity','0');
+      vLbl.textContent = '₹'+val.toLocaleString('en-IN');
+      svg.appendChild(vLbl);
+      bars[bars.length-1].label = vLbl;
+    }
+  });
+
+  // baseline axis
+  const axis = document.createElementNS(svgNS,'line');
+  axis.setAttribute('x1',padL); axis.setAttribute('x2',W-padR);
+  axis.setAttribute('y1',yFor(yMin)); axis.setAttribute('y2',yFor(yMin));
+  axis.setAttribute('stroke','#8892A6'); axis.setAttribute('stroke-width','1');
+  svg.appendChild(axis);
+
+  ScrollTrigger.create({
+    trigger:'#curve-section', start:'top 75%', once:true,
+    onEnter: ()=>{
+      bars.forEach((b,i)=>{
+        if(reduceMotion){
+          b.bar.setAttribute('y', b.targetY); b.bar.setAttribute('height', b.height);
+          if(b.label) b.label.setAttribute('opacity','1');
+          return;
+        }
+        gsap.to(b.bar,{attr:{y:b.targetY, height:b.height}, duration:0.7, delay:i*0.06, ease:'power2.out'});
+        if(b.label) gsap.to(b.label,{opacity:1, duration:0.5, delay:i*0.06+0.5});
+      });
+    }
+  });
+})();
+
+document.querySelectorAll('.phase').forEach((el,i)=>{
+  gsap.to(el,{
+    opacity:1,duration:.7,ease:'power2.out',
+    scrollTrigger:{trigger:el,start:'top 88%'}
+  });
+  const items = el.querySelectorAll('.pc-list li');
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(items.length && !prefersReducedMotion){
+    gsap.set(items,{opacity:0,x:-10});
+    gsap.to(items,{
+      opacity:1,x:0,duration:.45,ease:'power2.out',stagger:0.035,
+      scrollTrigger:{trigger:el,start:'top 82%'}
+    });
+  }
+});
+
+// ===== CALCULATOR LOGIC =====
+const capIn=document.getElementById('capIn'), riskPctIn=document.getElementById('riskPctIn'),
+      rrIn=document.getElementById('rrIn'), wrIn=document.getElementById('wrIn'), tpdIn=document.getElementById('tpdIn');
+const capOut=document.getElementById('capOut'), riskPctOut=document.getElementById('riskPctOut'),
+      rrOut=document.getElementById('rrOut'), wrOut=document.getElementById('wrOut'), tpdOut=document.getElementById('tpdOut');
+const outRisk=document.getElementById('outRisk'), outReward=document.getElementById('outReward'),
+      outExp=document.getElementById('outExp'), outTrades=document.getElementById('outTrades'),
+      outMonthly=document.getElementById('outMonthly'), outPct=document.getElementById('outPct'), verdict=document.getElementById('verdict');
+
+function fmt(n){ return '₹' + Math.round(n).toLocaleString('en-IN'); }
+
+function calc(){
+  const cap = +capIn.value;
+  const riskPct = +riskPctIn.value;
+  const rr = +rrIn.value;
+  const wr = +wrIn.value/100;
+  const tpd = +tpdIn.value;
+  const tradingDays = 20;
+
+  const risk = cap * (riskPct/100);
+  const reward = risk * rr;
+  const expectancy = (wr*reward) - ((1-wr)*risk);
+  const totalTrades = tpd * tradingDays;
+  const monthly = expectancy * totalTrades;
+  const monthlyPct = (monthly/cap)*100;
+  const breakevenWR = (1/(1+rr))*100;
+
+  capOut.textContent = fmt(cap);
+  riskPctOut.textContent = riskPct.toFixed(1)+'%';
+  rrOut.textContent = '1 : '+rr;
+  wrOut.textContent = Math.round(wr*100)+'%';
+  tpdOut.textContent = tpd;
+
+  outRisk.textContent = fmt(risk);
+  outReward.textContent = fmt(reward);
+  outExp.textContent = fmt(expectancy);
+  outExp.className = 'v ' + (expectancy>=0?'profit':'loss');
+  outTrades.textContent = totalTrades;
+  outMonthly.textContent = fmt(monthly);
+  outMonthly.className = 'v ' + (monthly>=0?'profit':'loss');
+  outPct.textContent = monthlyPct.toFixed(2)+'%';
+  outPct.className = 'v ' + (monthlyPct>=0?'profit':'loss');
+
+  if(monthlyPct >= 3 && monthlyPct <= 8){
+    verdict.className='verdict good';
+    verdict.textContent = `On target. Breakeven win rate at 1:${rr} is ${breakevenWR.toFixed(1)}% — you're modelling ${Math.round(wr*100)}%, which lands in the healthy 3–5%+ monthly zone.`;
+  } else if(monthlyPct > 8){
+    verdict.className='verdict good';
+    verdict.textContent = `Above target (${monthlyPct.toFixed(1)}%/mo). This is likely optimistic — treat it as a ceiling, not an expectation, and keep sizing conservative.`;
+  } else if(monthlyPct >= 0){
+    verdict.className='verdict bad';
+    verdict.textContent = `Below the 3–5% target. Breakeven win rate here is ${breakevenWR.toFixed(1)}% — you need to close the gap on win rate or reward:risk, not on trade count.`;
+  } else {
+    verdict.className='verdict bad';
+    verdict.textContent = `Negative expectancy. At 1:${rr}, you need at least ${breakevenWR.toFixed(1)}% win rate just to break even — below that, more trades only means faster losses.`;
+  }
+}
+[capIn,riskPctIn,rrIn,wrIn,tpdIn].forEach(el=>el.addEventListener('input',calc));
+calc();
+
+// ===== VISUAL POLISH: cursor, tilt, magnet, parallax =====
+const isTouch = window.matchMedia('(hover:none)').matches || window.innerWidth < 900;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+if(!isTouch && !reduceMotion){
+  document.body.classList.add('has-cursor');
+
+  // --- custom cursor: dot snaps instantly, ring trails smoothly ---
+  const dot = document.getElementById('curDot');
+  const ring = document.getElementById('curRing');
+  const ringX = gsap.quickTo(ring,'x',{duration:0.5,ease:'power3.out'});
+  const ringY = gsap.quickTo(ring,'y',{duration:0.5,ease:'power3.out'});
+  window.addEventListener('mousemove', e=>{
+    dot.style.transform = `translate(${e.clientX}px, ${e.clientY}px) translate(-50%,-50%)`;
+    ringX(e.clientX); ringY(e.clientY);
+  });
+  document.querySelectorAll('a, button, input[type=range], .tilt, .phase-marker').forEach(el=>{
+    el.addEventListener('mouseenter', ()=>ring.classList.add('active'));
+    el.addEventListener('mouseleave', ()=>ring.classList.remove('active'));
+  });
+
+  // --- 3D tilt + spotlight on cards ---
+  document.querySelectorAll('.tilt').forEach(card=>{
+    const strength = 7;
+    card.addEventListener('mousemove', e=>{
+      const r = card.getBoundingClientRect();
+      const px = (e.clientX - r.left)/r.width;
+      const py = (e.clientY - r.top)/r.height;
+      const rx = (py - 0.5) * -strength;
+      const ry = (px - 0.5) * strength;
+      card.style.transform = `perspective(900px) rotateX(${rx}deg) rotateY(${ry}deg) translateZ(2px)`;
+      card.style.setProperty('--mx', (px*100)+'%');
+      card.style.setProperty('--my', (py*100)+'%');
+    });
+    card.addEventListener('mouseleave', ()=>{
+      card.style.transform = 'perspective(900px) rotateX(0deg) rotateY(0deg)';
+    });
+  });
+
+  // --- magnetic pull on nav links + phase markers ---
+  document.querySelectorAll('.magnet').forEach(el=>{
+    el.addEventListener('mousemove', e=>{
+      const r = el.getBoundingClientRect();
+      const mx = (e.clientX - r.left - r.width/2) * 0.35;
+      const my = (e.clientY - r.top - r.height/2) * 0.35;
+      el.style.transform = `translate(${mx}px, ${my}px)`;
+    });
+    el.addEventListener('mouseleave', ()=>{ el.style.transform = 'translate(0,0)'; });
+  });
+
+  // --- subtle tilt on the equity curve panel as you move over it ---
+  const curvePanel = document.querySelector('.curve-panel');
+  if(curvePanel){
+    curvePanel.addEventListener('mousemove', e=>{
+      const r = curvePanel.getBoundingClientRect();
+      const px = (e.clientX - r.left)/r.width - 0.5;
+      const py = (e.clientY - r.top)/r.height - 0.5;
+      gsap.to(curvePanel,{rotateX:py*-4,rotateY:px*4,duration:0.5,ease:'power2.out',transformPerspective:900});
+    });
+    curvePanel.addEventListener('mouseleave', ()=>{
+      gsap.to(curvePanel,{rotateX:0,rotateY:0,duration:0.6,ease:'power2.out'});
+    });
+  }
+
+  // --- background grid drifts subtly on scroll ---
+  gsap.to(document.body,{
+    '--grid-x':'-48px','--grid-y':'-48px',
+    ease:'none',
+    scrollTrigger:{trigger:document.body,start:'top top',end:'bottom bottom',scrub:1}
+  });
+}
+
+// ===== NAV CANDLES — sequential "market print" band in front of the logo =====
+(function(){
+  const mount = document.getElementById('navCandles');
+  if(!mount) return;
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const cols = 9, vw = 90, vh = 32, cellW = vw/cols;
+  const svg = document.createElementNS(svgNS,'svg');
+  svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+  svg.setAttribute('preserveAspectRatio','none');
+  mount.appendChild(svg);
+
+  const UP = '#3FB68B', DOWN = '#E5646B';
+  const candles = [];
+  const cy = vh/2;
+
+  for(let i=0;i<cols;i++){
+    const cx = i*cellW + cellW/2;
+    const wick = document.createElementNS(svgNS,'line');
+    wick.setAttribute('x1',cx); wick.setAttribute('x2',cx);
+    wick.setAttribute('y1',cy-1); wick.setAttribute('y2',cy+1);
+    wick.setAttribute('stroke-width','1');
+    wick.setAttribute('stroke', UP);
+    svg.appendChild(wick);
+
+    const body = document.createElementNS(svgNS,'rect');
+    const bw = cellW*0.55;
+    body.setAttribute('x', cx-bw/2); body.setAttribute('width', bw);
+    body.setAttribute('y', cy-1); body.setAttribute('height',2);
+    body.setAttribute('rx','1');
+    body.setAttribute('fill', UP);
+    body.setAttribute('opacity','0.35');
+    svg.appendChild(body);
+
+    candles.push({cy, body, wick});
+  }
+
+  // walks left to right, "printing" one candle at a time like live price ticks,
+  // then pauses and resets — same idea as a chart replaying its session.
+  let i = 0;
+  function printNext(){
+    if(i >= candles.length){
+      setTimeout(resetAll, 750);
+      return;
+    }
+    const c = candles[i];
+    const up = Math.random() > 0.48;
+    const bodyH = 3 + Math.random()*(vh*0.6);
+    const wickExtra = 1 + Math.random()*4;
+    const newY = c.cy - bodyH/2;
+    const color = up ? UP : DOWN;
+    c.body.setAttribute('fill', color);
+    c.body.setAttribute('opacity','1');
+    c.wick.setAttribute('stroke', color);
+
+    if(reduceMotion){
+      c.body.setAttribute('y', newY); c.body.setAttribute('height', bodyH);
+      c.wick.setAttribute('y1', newY - wickExtra); c.wick.setAttribute('y2', newY + bodyH + wickExtra);
+      i++; printNext();
+      return;
+    }
+    gsap.to(c.body,{attr:{y:newY, height:bodyH}, duration:0.32, ease:'power2.out'});
+    gsap.to(c.wick,{attr:{y1:newY-wickExtra, y2:newY+bodyH+wickExtra}, duration:0.32, ease:'power2.out',
+      onComplete:()=>{ i++; setTimeout(printNext, 110); }});
+  }
+
+  function resetAll(){
+    candles.forEach(c=>{
+      c.body.setAttribute('opacity','0.35');
+      if(reduceMotion){
+        c.body.setAttribute('y', c.cy-1); c.body.setAttribute('height',2);
+        c.wick.setAttribute('y1', c.cy-1); c.wick.setAttribute('y2', c.cy+1);
+      } else {
+        gsap.to(c.body,{attr:{y:c.cy-1, height:2}, duration:0.25, ease:'power1.inOut'});
+        gsap.to(c.wick,{attr:{y1:c.cy-1, y2:c.cy+1}, duration:0.25, ease:'power1.inOut'});
+      }
+    });
+    i = 0;
+    setTimeout(printNext, 400);
+  }
+
+  printNext();
+})();
+
+// ===== CANDLE RUN — continues the header band down the page to Diagnosis =====
+(function(){
+  const mount = document.getElementById('candleRun');
+  const anchor = document.getElementById('navCandles');
+  const diag = document.getElementById('diagnostic');
+  if(!mount || !anchor || !diag) return;
+  const svgNS = 'http://www.w3.org/2000/svg';
+  let rebuildToken = 0;
+
+  function layout(){
+    const aRect = anchor.getBoundingClientRect();
+    const dRect = diag.getBoundingClientRect();
+    const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+    const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+    const top = aRect.bottom + scrollY;
+    const height = Math.max(180, (dRect.top + scrollY) - top);
+    mount.style.top = top + 'px';
+    mount.style.left = (aRect.left + scrollX) + 'px';
+    mount.style.width = aRect.width + 'px';
+    mount.style.height = height + 'px';
+    build(aRect.width, height);
+  }
+
+  function build(wPx, hPx){
+    const myToken = ++rebuildToken;
+    mount.innerHTML = '';
+    const cellH = 34;
+    const rows = Math.max(4, Math.floor(hPx/cellH));
+    const vw = Math.max(20, wPx), vh = rows*cellH;
+    const svg = document.createElementNS(svgNS,'svg');
+    svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
+    svg.setAttribute('preserveAspectRatio','none');
+    mount.appendChild(svg);
+
+    const UP='#3FB68B', DOWN='#E5646B';
+    const cx = vw/2;
+    const bw = Math.min(24, vw*0.42);
+    const candles = [];
+
+    for(let i=0;i<rows;i++){
+      const cy = i*cellH + cellH/2;
+      const wick = document.createElementNS(svgNS,'line');
+      wick.setAttribute('x1',cx); wick.setAttribute('x2',cx);
+      wick.setAttribute('y1',cy-1); wick.setAttribute('y2',cy+1);
+      wick.setAttribute('stroke-width','1'); wick.setAttribute('stroke',UP);
+      svg.appendChild(wick);
+
+      const body = document.createElementNS(svgNS,'rect');
+      body.setAttribute('x',cx-bw/2); body.setAttribute('width',bw);
+      body.setAttribute('y',cy-1); body.setAttribute('height',2);
+      body.setAttribute('rx','1'); body.setAttribute('fill',UP); body.setAttribute('opacity','0.35');
+      svg.appendChild(body);
+
+      candles.push({cy, body, wick});
+    }
+
+    let i = 0;
+    function printNext(){
+      if(myToken !== rebuildToken) return; // superseded by a resize rebuild
+      if(i >= candles.length){ setTimeout(resetAll, 900); return; }
+      const c = candles[i];
+      const up = Math.random() > 0.48;
+      const bodyH = 4 + Math.random()*(cellH*0.75);
+      const wickExtra = 2 + Math.random()*6;
+      const newY = c.cy - bodyH/2;
+      const color = up ? UP : DOWN;
+      c.body.setAttribute('fill', color); c.body.setAttribute('opacity','1');
+      c.wick.setAttribute('stroke', color);
+
+      if(reduceMotion){
+        c.body.setAttribute('y', newY); c.body.setAttribute('height', bodyH);
+        c.wick.setAttribute('y1', newY - wickExtra); c.wick.setAttribute('y2', newY + bodyH + wickExtra);
+        i++; printNext();
+        return;
+      }
+      gsap.to(c.body,{attr:{y:newY, height:bodyH}, duration:0.3, ease:'power2.out'});
+      gsap.to(c.wick,{attr:{y1:newY-wickExtra, y2:newY+bodyH+wickExtra}, duration:0.3, ease:'power2.out',
+        onComplete:()=>{ if(myToken!==rebuildToken) return; i++; setTimeout(printNext, 90); }});
+    }
+
+    function resetAll(){
+      if(myToken !== rebuildToken) return;
+      candles.forEach(c=>{
+        c.body.setAttribute('opacity','0.35');
+        if(reduceMotion){
+          c.body.setAttribute('y', c.cy-1); c.body.setAttribute('height',2);
+          c.wick.setAttribute('y1', c.cy-1); c.wick.setAttribute('y2', c.cy+1);
+        } else {
+          gsap.to(c.body,{attr:{y:c.cy-1, height:2}, duration:0.25, ease:'power1.inOut'});
+          gsap.to(c.wick,{attr:{y1:c.cy-1, y2:c.cy+1}, duration:0.25, ease:'power1.inOut'});
+        }
+      });
+      i = 0;
+      setTimeout(printNext, 400);
+    }
+
+    printNext();
+  }
+
+  window.addEventListener('load', layout);
+  setTimeout(layout, 500);   // catch late font/layout shifts
+  setTimeout(layout, 1500);
+  let resizeT;
+  window.addEventListener('resize', ()=>{
+    clearTimeout(resizeT);
+    resizeT = setTimeout(layout, 200);
+  });
+})();
+
+// ===== SIDE NAV — highlight the section currently in view =====
+(function(){
+  const links = document.querySelectorAll('.side-nav a');
+  if(!links.length) return;
+  const map = {};
+  links.forEach(a=>{ map[a.getAttribute('href').slice(1)] = a; });
+  const targets = Object.keys(map).map(id=>document.getElementById(id)).filter(Boolean);
+  if(!targets.length) return;
+
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const link = map[entry.target.id];
+      if(!link) return;
+      if(entry.isIntersecting) link.classList.add('active');
+      else link.classList.remove('active');
+    });
+  }, {rootMargin:'-40% 0px -50% 0px', threshold:0});
+
+  targets.forEach(t=>io.observe(t));
+})();
+</script>
+<script src="sitenav.js" defer></script>
+</body>
+</html>

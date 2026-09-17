@@ -64,10 +64,11 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.03;letter-spacin
   padding:13px 14px 11px;text-align:center;
   box-shadow:0 8px 28px rgba(0,0,0,.55),0 0 14px rgba(76,212,232,.12);
   animation:fc-breathe 18s ease-in-out infinite}
-.floatclock .fc-ampm{font-family:var(--mono);font-size:10px;font-weight:700;
-  color:#7DD3FC;letter-spacing:.14em;text-transform:uppercase}
+.floatclock .fc-row{display:flex;align-items:baseline;justify-content:center;gap:5px}
+.floatclock .fc-ampm{font-family:var(--mono);font-size:18px;font-weight:700;
+  color:#7DD3FC;letter-spacing:.02em;text-transform:uppercase}
 .floatclock .fc-time{font-family:var(--mono);font-size:18px;font-weight:700;
-  color:#F2F5F8;letter-spacing:.02em;margin-top:2px}
+  color:#F2F5F8;letter-spacing:.02em}
 .floatclock .fc-date{font-family:var(--mono);font-size:10.5px;color:#7DD3FC;
   margin-top:4px;animation:fc-pulse 7s ease-in-out infinite}
 .floatclock .fc-slogan{font-family:var(--mono);font-size:10.5px;font-weight:700;
@@ -629,8 +630,10 @@ body.locked{overflow:hidden}
 </nav>
 
 <div class="floatclock" id="floatclock">
-  <div class="fc-ampm" id="fcAmpm">--</div>
-  <div class="fc-time" id="fcTime">--:--:--</div>
+  <div class="fc-row">
+    <div class="fc-time" id="fcTime">--:--:--</div>
+    <div class="fc-ampm" id="fcAmpm">--</div>
+  </div>
   <div class="fc-date" id="fcDate">--- -- --- ----</div>
   <div class="fc-slogan"><span>Time</span><span>is</span><span>Money</span></div>
 </div>

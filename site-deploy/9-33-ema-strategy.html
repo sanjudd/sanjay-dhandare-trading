@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>9 &amp; 33 EMA Strategy — cross, candle, room to target</title>
+<meta name="description" content="An animated walkthrough of the 9/33 EMA crossover strategy: reversal candle at the cross, confirmed by room to the next support or resistance.">
+<style>
+:root{
+  --ink:#050C1A; --panel:#0B1A33; --panel-hi:#12294D; --panel-2:#0E2144;
+  --edge:rgba(124,162,214,.17); --edge-hi:rgba(124,162,214,.34);
+  --text:#E9F0FB; --muted:#8CA4C8; --dim:#61799C;
+  --gold:#FFC65C; --gold-d:#E0A32F;
+  --up:#2FD99A; --up-d:#18A876; --down:#FF5F7E; --down-d:#D93A5C;
+  --ema9:#6FD6EA; --ema33:#3E6BD8; --level:#FF3E9A;
+  --r:14px;
+  --display:-apple-system,"Segoe UI",system-ui,sans-serif;
+  --body:-apple-system,"Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--ink);color:var(--text);font-family:var(--body);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--gold);color:#0a1426}
+.wrap{width:min(1180px,92vw);margin-inline:auto}
+h1,h2,h3,.num{font-family:var(--display);font-weight:800;letter-spacing:-.026em;line-height:1.05}
+a{color:inherit}
+
+/* topbar */
+.topbar{position:fixed;inset:0 0 auto 0;z-index:60;-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);
+  background:linear-gradient(180deg,rgba(5,12,26,.9),rgba(5,12,26,.32));border-bottom:1px solid rgba(124,162,214,.12)}
+.topbar .wrap{display:flex;align-items:center;justify-content:space-between;height:58px;gap:16px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:15.5px}
+.brand i{width:9px;height:9px;border-radius:50%;background:var(--up);box-shadow:0 0 0 0 rgba(47,217,154,.55);animation:pulse 2.4s infinite}
+@keyframes pulse{70%{box-shadow:0 0 0 11px rgba(47,217,154,0)}100%{box-shadow:0 0 0 0 rgba(47,217,154,0)}}
+.tnav{display:flex;gap:22px;font-size:14.5px;color:var(--muted)}
+.tnav a{text-decoration:none;transition:color .2s}
+.tnav a:hover{color:var(--gold)}
+.scrollbar{position:absolute;left:0;bottom:-1px;height:2px;width:0;background:linear-gradient(90deg,var(--up),var(--gold));transition:width .08s linear}
+@media(max-width:820px){.tnav{display:none}}
+
+/* hero */
+.hero{position:relative;min-height:100svh;display:flex;align-items:center;overflow:hidden}
+#heroCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero .veil{position:absolute;inset:0;
+  background:linear-gradient(92deg,rgba(5,12,26,.97) 0%,rgba(5,12,26,.92) 34%,rgba(5,12,26,.5) 62%,rgba(5,12,26,.1) 100%),
+             radial-gradient(120% 80% at 50% 0%,rgba(28,66,126,.5),transparent 62%)}
+.hero .wrap{position:relative;z-index:2;padding:120px 0 100px}
+.hero h1{font-size:clamp(2.1rem,4.6vw,4rem);max-width:20ch}
+.hero h1 em{font-style:normal;color:var(--gold)}
+.hero h1 i{font-style:normal;color:var(--down)}
+.hero p.lead{margin-top:26px;max-width:56ch;font-size:clamp(1.02rem,1.5vw,1.24rem);color:var(--muted)}
+.tagrow{display:flex;flex-wrap:wrap;gap:10px;margin-top:34px}
+.tag{border:1px solid var(--edge);border-radius:999px;padding:8px 16px;font-size:14px;color:var(--muted);background:rgba(11,26,51,.7)}
+.tag b{color:var(--text);font-weight:700}
+.tag.short{border-color:rgba(255,95,126,.35);color:#FFC0CC}
+.tag.long{border-color:rgba(47,217,154,.35);color:#BFF5E1}
+.scrollcue{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);z-index:3;
+  display:flex;flex-direction:column;align-items:center;gap:9px;color:var(--dim);font-size:13px}
+.scrollcue svg{animation:bob 2.1s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.55}50%{transform:translateY(7px);opacity:1}}
+
+/* section frame */
+section.band{padding:110px 0;position:relative}
+.eyebrow{display:flex;align-items:center;gap:12px;color:var(--gold);font-size:14.5px;font-weight:700;margin-bottom:16px}
+.eyebrow span{height:1px;width:44px;background:linear-gradient(90deg,var(--gold),transparent)}
+.eyebrow.d{color:var(--down)}.eyebrow.d span{background:linear-gradient(90deg,var(--down),transparent)}
+.eyebrow.u{color:var(--up)}.eyebrow.u span{background:linear-gradient(90deg,var(--up),transparent)}
+h2{font-size:clamp(1.95rem,3.5vw,2.9rem);max-width:22ch}
+.sublead{margin-top:16px;max-width:64ch;color:var(--muted);font-size:1.06rem}
+
+.rise{opacity:0;transform:translateY(22px);transition:opacity .7s cubic-bezier(.2,.7,.3,1),transform .7s cubic-bezier(.2,.7,.3,1)}
+.in .rise,.rise.in{opacity:1;transform:none}
+.in .rise:nth-child(2){transition-delay:.06s}
+.in .rise:nth-child(3){transition-delay:.12s}
+
+.panel{background:linear-gradient(180deg,var(--panel-2),var(--panel));border:1px solid var(--edge);border-radius:var(--r);position:relative;overflow:hidden}
+.chartbox{position:relative;width:100%}
+.chartbox canvas{display:block;width:100%;height:100%}
+
+/* rule cards */
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:46px}
+@media(max-width:860px){.rules{grid-template-columns:1fr}}
+.rulecard{padding:26px}
+.rulecard .dirtag{display:inline-flex;align-items:center;gap:8px;font-family:var(--display);font-weight:800;
+  font-size:13px;letter-spacing:.03em;padding:7px 14px;border-radius:999px;margin-bottom:18px}
+.rulecard.short .dirtag{background:rgba(255,95,126,.14);color:#FF97AC;border:1px solid rgba(255,95,126,.32)}
+.rulecard.long .dirtag{background:rgba(47,217,154,.14);color:#7BEFC6;border:1px solid rgba(47,217,154,.32)}
+.rulecard h3{font-size:1.4rem;margin-bottom:14px}
+.rulecard ol{list-style:none;display:flex;flex-direction:column;gap:12px}
+.rulecard li{display:flex;gap:12px;font-size:15px;color:var(--muted);line-height:1.5}
+.rulecard li>b{flex:0 0 auto;width:24px;height:24px;border-radius:50%;display:grid;place-items:center;
+  font-family:var(--display);font-weight:800;font-size:12.5px;color:#061227;background:var(--dim)}
+.rulecard.short li>b{background:var(--down)}
+.rulecard.long li>b{background:var(--up)}
+.rulecard li span b{color:var(--text);font-weight:800}
+
+/* setup showcase */
+.setup{margin-top:46px}
+.setup .head{display:flex;flex-wrap:wrap;align-items:center;gap:14px;padding:16px 20px;border-bottom:1px solid var(--edge)}
+.setup .head h3{font-size:1.2rem}
+.setup .head .spacer{flex:1}
+.btn{font-family:var(--body);font-weight:700;font-size:14px;color:var(--text);cursor:pointer;
+  background:rgba(16,41,77,.9);border:1px solid var(--edge-hi);border-radius:999px;padding:9px 17px;
+  display:inline-flex;align-items:center;gap:8px;transition:all .22s;text-decoration:none}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn svg{transition:transform .4s}
+.btn:hover svg{transform:rotate(-180deg)}
+.setup .chartbox{height:460px;padding:8px}
+@media(max-width:900px){.setup .chartbox{height:380px}}
+@media(max-width:560px){.setup .chartbox{height:300px}}
+.legs{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--edge);border-top:1px solid var(--edge)}
+@media(max-width:600px){.legs{grid-template-columns:repeat(2,1fr)}}
+.leg{background:var(--panel);padding:15px 18px}
+.leg span{display:block;font-size:12.6px;color:var(--dim);margin-bottom:3px}
+.leg b{font-family:var(--display);font-weight:800;font-size:1.22rem;font-variant-numeric:tabular-nums}
+.leg.rr b{color:var(--gold)}
+
+/* room / rr */
+.rrgrid{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-top:46px;align-items:center}
+@media(max-width:860px){.rrgrid{grid-template-columns:1fr}}
+.ctrl{padding:26px}
+.field{margin-bottom:26px}
+.field:last-child{margin-bottom:0}
+.field .row{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:12px}
+.field label{font-size:15px;color:var(--muted)}
+.field .val{font-family:var(--display);font-weight:800;font-size:1.28rem;font-variant-numeric:tabular-nums}
+input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:4px;background:rgba(124,162,214,.22);outline:none;cursor:pointer}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;height:22px;border-radius:50%;
+  background:var(--text);border:4px solid var(--c,#74A9FF);cursor:grab;box-shadow:0 3px 12px rgba(0,0,0,.5)}
+input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--text);border:4px solid var(--c,#74A9FF);cursor:grab}
+.bars{padding:26px}
+.bar{margin-bottom:20px}
+.bar .lbl{display:flex;justify-content:space-between;font-size:14.2px;margin-bottom:8px;color:var(--muted)}
+.bar .lbl b{color:var(--text);font-variant-numeric:tabular-nums}
+.bar .track{height:16px;border-radius:8px;background:rgba(124,162,214,.14);overflow:hidden}
+.bar .fillb{height:100%;border-radius:8px;width:0;transition:width .35s cubic-bezier(.2,.8,.3,1)}
+.ratio{margin-top:26px;padding-top:22px;border-top:1px solid var(--edge);display:flex;align-items:baseline;gap:14px;flex-wrap:wrap}
+.ratio .big{font-family:var(--display);font-weight:800;font-size:clamp(2.1rem,4.4vw,3rem);font-variant-numeric:tabular-nums;transition:color .3s}
+.ratio .say{font-size:14.6px;color:var(--muted)}
+
+/* checklist */
+.checkgrid{display:grid;grid-template-columns:1fr 300px;gap:34px;margin-top:46px;align-items:start}
+@media(max-width:860px){.checkgrid{grid-template-columns:1fr}}
+.clist{display:flex;flex-direction:column;gap:10px}
+.ci{display:flex;align-items:center;gap:13px;padding:14px 16px;border-radius:11px;cursor:pointer;
+  background:var(--panel);border:1px solid var(--edge);font-size:15px;text-align:left;color:var(--text);
+  font-family:var(--body);transition:all .25s;width:100%}
+.ci:hover{border-color:var(--edge-hi)}
+.ci .bx{width:21px;height:21px;border-radius:6px;border:2px solid var(--dim);flex:0 0 auto;position:relative;transition:.25s}
+.ci .bx svg{position:absolute;inset:2px;opacity:0;transform:scale(.4);transition:.25s}
+.ci.on{border-color:rgba(47,217,154,.45);background:rgba(47,217,154,.09)}
+.ci.on .bx{background:var(--up);border-color:var(--up)}
+.ci.on .bx svg{opacity:1;transform:none}
+.ring{padding:28px;text-align:center;position:sticky;top:82px}
+.ring svg{width:150px;height:150px;transform:rotate(-90deg)}
+.ring .trk{stroke:rgba(124,162,214,.18)}
+.ring .prg{stroke:var(--up);stroke-linecap:round;transition:stroke-dashoffset .5s cubic-bezier(.2,.8,.3,1),stroke .4s}
+.ring .cnt{font-family:var(--display);font-weight:800;font-size:2.5rem;margin-top:-102px;position:relative;font-variant-numeric:tabular-nums}
+.ring .of{color:var(--dim);font-size:14px;margin-top:52px}
+.ring .msg{margin-top:20px;font-size:15px;color:var(--muted);min-height:3em;transition:color .3s}
+.ring.done .msg{color:var(--up);font-weight:700}
+
+footer{padding:80px 0 60px;border-top:1px solid var(--edge);background:linear-gradient(180deg,transparent,rgba(11,26,51,.7))}
+.eq{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:12px;text-align:center;
+  font-family:var(--display);font-weight:800;font-size:clamp(1.2rem,3vw,2rem)}
+.eq .g{color:var(--gold)}
+.eq .ln{width:60px;height:2px;background:linear-gradient(90deg,transparent,var(--gold))}
+.eq .ln.r{background:linear-gradient(90deg,var(--gold),transparent)}
+.footlinks{margin-top:34px;display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.disc{margin:36px auto 0;max-width:60ch;text-align:center;color:var(--dim);font-size:14px}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .rise{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="wrap">
+    <div class="brand"><i></i>9 &amp; 33 EMA Strategy</div>
+    <nav class="tnav">
+      <a href="#rule">The rule</a>
+      <a href="#short">Short</a>
+      <a href="#long">Long</a>
+      <a href="#room">Room to target</a>
+      <a href="#check">Checklist</a>
+    </nav>
+  </div>
+  <div class="scrollbar" id="scrollbar"></div>
+</header>
+
+<section class="hero">
+  <canvas id="heroCanvas"></canvas>
+  <div class="veil"></div>
+  <div class="wrap">
+    <h1>The cross tells you <em>which way</em>. The candle tells you <i>right now</i>.</h1>
+    <p class="lead">A refinement on the 9 EMA playbook: add a slower 33 EMA, wait for the two to
+       cross, and only act if a reversal candle prints at that exact cross — with enough open
+       road to the next support or resistance to make the risk worth taking.</p>
+    <div class="tagrow">
+      <div class="tag"><b>9 EMA</b> fast line</div>
+      <div class="tag"><b>33 EMA</b> slow line</div>
+      <div class="tag short"><b>Shooting star</b> at a down-cross → short</div>
+      <div class="tag long"><b>Hammer</b> at an up-cross → long</div>
+    </div>
+  </div>
+  <div class="scrollcue">Scroll<svg width="14" height="20" viewBox="0 0 14 20" fill="none"><path d="M1 1l6 7 6-7M1 12l6 7 6-7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+</section>
+
+<section class="band" id="rule">
+  <div class="wrap">
+    <div class="eyebrow rise"><span></span>The refinement</div>
+    <h2 class="rise">One trigger. Two mirrored setups.</h2>
+    <p class="sublead rise">Same two lines, same one candle rule, read in opposite directions.
+       Neither side fires without both conditions — the cross gives the direction, the candle
+       gives the timing.</p>
+    <div class="rules">
+      <div class="panel rulecard short rise">
+        <div class="dirtag">SHORT — SELL</div>
+        <h3>9 EMA crosses under the 33 EMA</h3>
+        <ol>
+          <li><b>1</b><span>The <b>9 EMA</b> crosses below the <b>33 EMA</b> — momentum has flipped down.</span></li>
+          <li><b>2</b><span>A <b>shooting star</b> prints at that same crossover — the rally got rejected right there.</span></li>
+          <li><b>3</b><span>There's clean <b>room down to the next support</b> — enough for 1:2 or better.</span></li>
+          <li><b>4</b><span>Stop above the shooting star's high. Target the support. Sell.</span></li>
+        </ol>
+      </div>
+      <div class="panel rulecard long rise">
+        <div class="dirtag">LONG — BUY</div>
+        <h3>9 EMA crosses over the 33 EMA</h3>
+        <ol>
+          <li><b>1</b><span>The <b>9 EMA</b> crosses above the <b>33 EMA</b> — momentum has flipped up.</span></li>
+          <li><b>2</b><span>A <b>hammer</b> prints at that same crossover — the sell-off got rejected right there.</span></li>
+          <li><b>3</b><span>There's clean <b>room up to the next resistance</b> — enough for 1:2 or better.</span></li>
+          <li><b>4</b><span>Stop below the hammer's low. Target the resistance. Buy.</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="short">
+  <div class="wrap">
+    <div class="eyebrow d rise"><span></span>Setup, walked — short</div>
+    <h2 class="rise">Rally into resistance, rejected on the cross.</h2>
+    <p class="sublead rise">This is the exact shape from the chart I marked up: a run into a
+       level, a shooting star landing right on the 9/33 down-cross, and a clean float down to
+       the next support underneath. The smaller version on the left already played out once —
+       same rule, same read.</p>
+    <div class="panel setup rise">
+      <div class="head">
+        <h3>NIFTY · 5 min</h3>
+        <div class="spacer"></div>
+        <button class="btn" id="shortReplay" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M20 4.5V11h-6.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Replay
+        </button>
+      </div>
+      <div class="chartbox" id="shortBox"><canvas></canvas></div>
+    </div>
+    <div class="legs">
+      <div class="leg"><span>Entry (break of shooting star low)</span><b id="sEntry">—</b></div>
+      <div class="leg"><span>Stop (above the wick)</span><b id="sStop">—</b></div>
+      <div class="leg"><span>Target (next support)</span><b id="sTarget">—</b></div>
+      <div class="leg rr"><span>Reward : risk</span><b id="sRR">—</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="long">
+  <div class="wrap">
+    <div class="eyebrow u rise"><span></span>Setup, walked — long</div>
+    <h2 class="rise">Sell-off into support, rejected on the cross.</h2>
+    <p class="sublead rise">The exact mirror. Price presses into a level, a hammer lands on the
+       9/33 up-cross, and there's clean air up to the next resistance overhead.</p>
+    <div class="panel setup rise">
+      <div class="head">
+        <h3>NIFTY · 5 min</h3>
+        <div class="spacer"></div>
+        <button class="btn" id="longReplay" type="button">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 11a8 8 0 1 0-2.3 5.7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><path d="M20 4.5V11h-6.5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Replay
+        </button>
+      </div>
+      <div class="chartbox" id="longBox"><canvas></canvas></div>
+    </div>
+    <div class="legs">
+      <div class="leg"><span>Entry (break of hammer high)</span><b id="lEntry">—</b></div>
+      <div class="leg"><span>Stop (below the wick)</span><b id="lStop">—</b></div>
+      <div class="leg"><span>Target (next resistance)</span><b id="lTarget">—</b></div>
+      <div class="leg rr"><span>Reward : risk</span><b id="lRR">—</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="room">
+  <div class="wrap">
+    <div class="eyebrow rise"><span></span>The filter that isn't optional</div>
+    <h2 class="rise">No room, no trade — even with a perfect cross and candle.</h2>
+    <p class="sublead rise">Drag the distance to the next support or resistance. The stop stays
+       fixed by the shooting star or hammer's wick — only the space between entry and the level
+       changes. Below roughly 1:1.5 the setup gets passed, full stop.</p>
+    <div class="rrgrid">
+      <div class="panel ctrl rise">
+        <div class="field">
+          <div class="row"><label for="wick">Stop distance (wick to entry)</label><span class="val" id="wickV">14 pts</span></div>
+          <input type="range" id="wick" min="6" max="30" step="1" value="14" style="--c:#FF3E9A">
+        </div>
+        <div class="field">
+          <div class="row"><label for="roomRange">Room to next level</label><span class="val" id="roomV">42 pts</span></div>
+          <input type="range" id="roomRange" min="10" max="90" step="1" value="42" style="--c:#2FD99A">
+        </div>
+      </div>
+      <div class="panel bars rise">
+        <div class="bar">
+          <div class="lbl"><span>Risk</span><b id="riskB">14 pts</b></div>
+          <div class="track"><div class="fillb" id="riskFill" style="background:var(--down)"></div></div>
+        </div>
+        <div class="bar">
+          <div class="lbl"><span>Reward</span><b id="rewardB">42 pts</b></div>
+          <div class="track"><div class="fillb" id="rewardFill" style="background:var(--up)"></div></div>
+        </div>
+        <div class="ratio">
+          <span class="big" id="ratioBig">1 : 3.0</span>
+          <span class="say" id="ratioSay">Comfortably past the 1:2 floor. Take it.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="band" id="check">
+  <div class="wrap">
+    <div class="eyebrow rise"><span></span>Before the order goes in</div>
+    <h2 class="rise">Five boxes. All five, every time.</h2>
+    <p class="sublead rise">Click through it like you would on the chart. If one stays unticked,
+       there's no trade — not "a smaller one," none.</p>
+    <div class="checkgrid">
+      <div class="clist rise">
+        <button class="ci" type="button" data-i="0">
+          <span class="bx"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-11" stroke="#061227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          9 EMA has actually crossed the 33 EMA — not just touching it
+        </button>
+        <button class="ci" type="button" data-i="1">
+          <span class="bx"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-11" stroke="#061227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          A shooting star (short) or hammer (long) closed right on that cross
+        </button>
+        <button class="ci" type="button" data-i="2">
+          <span class="bx"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-11" stroke="#061227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          The next support or resistance is far enough for 1:2 or better
+        </button>
+        <button class="ci" type="button" data-i="3">
+          <span class="bx"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-11" stroke="#061227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Stop is set beyond the signal candle's wick, not a rounder number
+        </button>
+        <button class="ci" type="button" data-i="4">
+          <span class="bx"><svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4 10-11" stroke="#061227" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+          Entry only on the break of the signal candle — not mid-candle
+        </button>
+      </div>
+      <div class="panel ring rise" id="ring">
+        <svg viewBox="0 0 120 120">
+          <circle class="trk" cx="60" cy="60" r="52" fill="none" stroke-width="10"/>
+          <circle class="prg" id="ringPrg" cx="60" cy="60" r="52" fill="none" stroke-width="10" stroke-dasharray="326.7" stroke-dashoffset="326.7"/>
+        </svg>
+        <div class="cnt"><span id="ringCnt">0</span></div>
+        <div class="of">of 5 confirmed</div>
+        <div class="msg" id="ringMsg">Work through the chart before the order does.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="eq"><span>Cross</span><span class="ln"></span><span class="g">+</span><span class="ln"></span><span>Candle</span><span class="ln"></span><span class="g">+</span><span class="ln"></span><span>Room</span><span class="ln r"></span><span class="g">=</span><span class="ln r"></span><span>Trade</span></div>
+    <div class="footlinks">
+      <a class="btn" href="index.html">The desk</a>
+      <a class="btn" href="9-ema-strategy-animated.html">The original 9 EMA playbook</a>
+      <a class="btn" href="trading-journal.html">Trading journal</a>
+    </div>
+    <p class="disc">I am not a SEBI-registered investment adviser or research analyst. Charts here
+       are illustrative and generated for teaching, not live data. Trade your own plan, with
+       money you can afford to lose.</p>
+  </div>
+</footer>
+
+<script>
+/* ---------- math ---------- */
+function ema(values,n){
+  const k=2/(n+1); let e=values[0];
+  return values.map((x,i)=>{ e = i ? x*k+e*(1-k) : x; return e; });
+}
+function rng(seed){
+  return function(){ seed|=0; seed=seed+0x6D2B79F5|0;
+    let t=Math.imul(seed^seed>>>15,1|seed);
+    t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; };
+}
+function lerp(a,b,t){ return a+(b-a)*t; }
+
+function pathFromWaypoints(waypoints,seed,noiseAmp){
+  const rnd=rng(seed);
+  const total=waypoints[waypoints.length-1][0];
+  const closes=new Array(total+1);
+  let wi=0;
+  for(let i=0;i<=total;i++){
+    while(wi<waypoints.length-2 && i>waypoints[wi+1][0]) wi++;
+    const [i0,v0]=waypoints[wi], [i1,v1]=waypoints[wi+1];
+    const t=(i1===i0)?1:(i-i0)/(i1-i0);
+    const base=lerp(v0,v1,Math.max(0,Math.min(1,t)));
+    closes[i]=base+(rnd()-0.5)*noiseAmp;
+  }
+  return closes;
+}
+
+function buildOHLC(closes,seed){
+  const rnd=rng(seed);
+  const out=[];
+  for(let i=0;i<closes.length;i++){
+    const prevClose = i? out[i-1].c : closes[i];
+    const open = i? prevClose + (rnd()-0.5)*(noiseFor(closes,i)*0.5) : closes[i];
+    const close = closes[i];
+    const hi = Math.max(open,close) + rnd()*noiseFor(closes,i)*0.9 + 0.6;
+    const lo = Math.min(open,close) - rnd()*noiseFor(closes,i)*0.9 - 0.6;
+    out.push({o:open,h:hi,l:lo,c:close});
+  }
+  return out;
+}
+function noiseFor(closes,i){
+  const a=closes[Math.max(0,i-1)], b=closes[i];
+  return Math.max(2.2, Math.abs(b-a)*1.4);
+}
+
+function findCrossovers(fast,slow,dir,from){
+  const out=[];
+  for(let i=Math.max(1,from);i<fast.length;i++){
+    const prevDiff=fast[i-1]-slow[i-1], diff=fast[i]-slow[i];
+    if(dir==='down' && prevDiff>=0 && diff<0) out.push(i);
+    if(dir==='up' && prevDiff<=0 && diff>0) out.push(i);
+  }
+  return out;
+}
+
+function makeShootingStar(idx,candles,closes){
+  const C=closes[idx];
+  const body=Math.max(1.6, noiseFor(closes,idx)*0.22);
+  const wick=Math.max(7, noiseFor(closes,idx)*2.6)+6;
+  const open=C+body*0.5, close=C-body*0.5;
+  candles[idx]={o:open,c:close,h:C+wick,l:Math.min(open,close)-body*0.3};
+}
+function makeHammer(idx,candles,closes){
+  const C=closes[idx];
+  const body=Math.max(1.6, noiseFor(closes,idx)*0.22);
+  const wick=Math.max(7, noiseFor(closes,idx)*2.6)+6;
+  const open=C-body*0.5, close=C+body*0.5;
+  candles[idx]={o:open,c:close,l:C-wick,h:Math.max(open,close)+body*0.3};
+}
+
+/* ---------- build the two datasets ---------- */
+function buildScenario(dir,seed){
+  const waypointsShort=[[0,22500],[9,22542],[13,22560],[17,22520],[23,22505],[24,22510],
+    [40,22600],[44,22626],[48,22604],[56,22572],[64,22532],[71,22508],[78,22496]];
+  const waypointsLong=[[0,22600],[9,22558],[13,22540],[17,22580],[23,22595],[24,22590],
+    [40,22500],[44,22474],[48,22496],[56,22528],[64,22568],[71,22592],[78,22604]];
+  const wps = dir==='short'? waypointsShort : waypointsLong;
+  const closes=pathFromWaypoints(wps,seed,2.4);
+  const candles=buildOHLC(closes,seed+7);
+  const fast=ema(closes,9), slow=ema(closes,33);
+  const crosses=findCrossovers(fast,slow,dir==='short'?'down':'up',20);
+  crosses.forEach(idx=>{ dir==='short' ? makeShootingStar(idx,candles,closes) : makeHammer(idx,candles,closes); });
+
+  const mainIdx = crosses.length? crosses[crosses.length-1] : Math.floor(candles.length*0.6);
+  let resistance,support,rallyStart;
+  if(dir==='short'){
+    rallyStart = crosses.length>1? crosses[0]+4 : 24;
+    resistance = Math.max(...closes.slice(rallyStart,mainIdx+1));
+    support = Math.min(...closes.slice(mainIdx, Math.min(candles.length, mainIdx+34)));
+  } else {
+    rallyStart = crosses.length>1? crosses[0]+4 : 24;
+    support = Math.min(...closes.slice(rallyStart,mainIdx+1));
+    resistance = Math.max(...closes.slice(mainIdx, Math.min(candles.length, mainIdx+34)));
+  }
+  const sig=candles[mainIdx];
+  const entry = dir==='short'? Math.min(sig.o,sig.c) : Math.max(sig.o,sig.c);
+  const stop  = dir==='short'? sig.h+5 : sig.l-5;
+  const target = dir==='short'? support : resistance;
+  const risk = Math.abs(stop-entry);
+  const reward = Math.abs(entry-target);
+
+  return {dir,candles,closes,fast,slow,crosses,mainIdx,resistance,support,entry,stop,target,risk,reward,
+    ratio: reward/risk};
+}
+
+/* ---------- chart renderer ---------- */
+function renderChart(canvas,scn,progress,annoProgress){
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const cssW=canvas.clientWidth, cssH=canvas.clientHeight;
+  if(canvas.width!==Math.round(cssW*dpr) || canvas.height!==Math.round(cssH*dpr)){
+    canvas.width=Math.round(cssW*dpr); canvas.height=Math.round(cssH*dpr);
+  }
+  const ctx=canvas.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,cssW,cssH);
+
+  const n=scn.candles.length;
+  const shown=Math.max(2,Math.floor(n*Math.min(1,progress)));
+  const padL=8, padR=70, padT=26, padB=22;
+  const plotW=cssW-padL-padR, plotH=cssH-padT-padB;
+  const cw=plotW/n;
+
+  let lo=Infinity,hi=-Infinity;
+  for(let i=0;i<shown;i++){ lo=Math.min(lo,scn.candles[i].l); hi=Math.max(hi,scn.candles[i].h); }
+  lo=Math.min(lo,scn.support); hi=Math.max(hi,scn.resistance);
+  const pad=(hi-lo)*0.12; lo-=pad; hi+=pad;
+  const y=v=>padT+(hi-v)/(hi-lo)*plotH;
+  const x=i=>padL+i*cw+cw/2;
+
+  ctx.font='11px -apple-system,system-ui,sans-serif';
+  ctx.strokeStyle='rgba(124,162,214,.1)'; ctx.lineWidth=1;
+  for(let g=0;g<4;g++){
+    const gy=padT+plotH*g/3;
+    ctx.beginPath(); ctx.moveTo(padL,gy); ctx.lineTo(cssW-padR,gy); ctx.stroke();
+  }
+
+  function levelLine(v,label,color){
+    const gy=y(v);
+    ctx.save();
+    ctx.strokeStyle=color; ctx.lineWidth=1.4; ctx.setLineDash([5,4]);
+    ctx.beginPath(); ctx.moveTo(padL,gy); ctx.lineTo(cssW-padR,gy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle=color; ctx.font='700 11px -apple-system,system-ui,sans-serif'; ctx.textAlign='left';
+    ctx.fillText(label,cssW-padR+6,gy+4);
+    ctx.restore();
+  }
+  levelLine(scn.resistance,scn.resistance.toFixed(0),'#FF3E9A');
+  levelLine(scn.support,scn.support.toFixed(0),'#FF3E9A');
+
+  if(annoProgress>0 && scn.mainIdx<shown){
+    const bx0=x(Math.max(0,scn.mainIdx-3)), bx1=x(Math.min(shown-1,scn.mainIdx+3))+cw/2;
+    const sigCandle=scn.candles[scn.mainIdx];
+    const zoneTopY = scn.dir==='short'? y(sigCandle.h) : y(scn.entry);
+    const zoneBotY = scn.dir==='short'? y(scn.entry) : y(sigCandle.l);
+    ctx.fillStyle='rgba(255,62,154,'+(0.16*annoProgress)+')';
+    ctx.fillRect(bx0,zoneTopY,bx1-bx0,Math.max(2,zoneBotY-zoneTopY));
+
+    const rx0=bx0, rx1=x(shown-1)+cw/2;
+    const roomTopY = scn.dir==='short'? y(scn.entry) : y(scn.target);
+    const roomBotY = scn.dir==='short'? y(scn.target) : y(scn.entry);
+    const growX = rx0 + (rx1-rx0)*Math.min(1,annoProgress*1.15);
+    ctx.fillStyle='rgba(47,217,154,'+(0.14*annoProgress)+')';
+    ctx.fillRect(rx0,roomTopY,Math.max(0,growX-rx0),Math.max(2,roomBotY-roomTopY));
+  }
+
+  ctx.lineWidth=1.6;
+  for(let i=0;i<shown;i++){
+    const c=scn.candles[i], cx=x(i);
+    const up=c.c>=c.o;
+    ctx.strokeStyle=ctx.fillStyle= up? '#2FD99A':'#FF5F7E';
+    ctx.beginPath(); ctx.moveTo(cx,y(c.h)); ctx.lineTo(cx,y(c.l)); ctx.stroke();
+    const bw=Math.max(2,cw*0.58);
+    const by0=y(Math.max(c.o,c.c)), by1=y(Math.min(c.o,c.c));
+    ctx.fillRect(cx-bw/2,by0,bw,Math.max(1.4,by1-by0));
+  }
+
+  function emaLine(vals,color,width){
+    ctx.beginPath(); ctx.strokeStyle=color; ctx.lineWidth=width;
+    for(let i=0;i<shown;i++){ const px=x(i), py=y(vals[i]); i? ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.stroke();
+  }
+  emaLine(scn.slow,'#3E6BD8',2.4);
+  emaLine(scn.fast,'#6FD6EA',1.8);
+
+  if(scn.mainIdx<shown){
+    const mx=x(scn.mainIdx), my=y(scn.dir==='short'? scn.candles[scn.mainIdx].h : scn.candles[scn.mainIdx].l);
+    ctx.beginPath(); ctx.arc(mx,my,4.5,0,Math.PI*2);
+    ctx.fillStyle= scn.dir==='short'?'#FF5F7E':'#2FD99A'; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='#050C1A'; ctx.stroke();
+
+    if(annoProgress>0.4){
+      const label = scn.dir==='short' ? '9 EMA × 33 EMA — shooting star' : '9 EMA × 33 EMA — hammer';
+      ctx.font='700 12px -apple-system,system-ui,sans-serif';
+      const tw=ctx.measureText(label).width;
+      const lx=Math.min(cssW-padR-tw-16, Math.max(padL+6, mx-tw/2));
+      const ly = scn.dir==='short'? my-16 : my+26;
+      ctx.globalAlpha=Math.min(1,(annoProgress-0.4)*2.2);
+      ctx.fillStyle='rgba(6,15,31,.88)';
+      ctx.fillRect(lx-8,ly-14,tw+16,22);
+      ctx.strokeStyle='rgba(124,162,214,.4)'; ctx.lineWidth=1; ctx.strokeRect(lx-8,ly-14,tw+16,22);
+      ctx.fillStyle='#E9F0FB'; ctx.fillText(label,lx,ly+2);
+      ctx.globalAlpha=1;
+    }
+  }
+}
+
+/* ---------- scroll-triggered animation wrapper ---------- */
+function mountSetup(boxId, scn, legIds){
+  const box=document.getElementById(boxId);
+  const canvas=box.querySelector('canvas');
+  let raf=null, t0=null;
+  const DUR=2600;
+  function frame(now){
+    if(!t0) t0=now;
+    const p=Math.min(1,(now-t0)/DUR);
+    const ease=1-Math.pow(1-p,3);
+    const candleProg = Math.min(1, ease*1.15);
+    const annoProg = Math.max(0, Math.min(1,(ease-0.55)/0.45));
+    renderChart(canvas,scn,candleProg,annoProg);
+    if(p<1){ raf=requestAnimationFrame(frame); }
+  }
+  function play(){ cancelAnimationFrame(raf); t0=null; raf=requestAnimationFrame(frame); }
+  function full(){ cancelAnimationFrame(raf); renderChart(canvas,scn,1,1); }
+
+  new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ play(); } });
+  },{threshold:.3}).observe(box);
+
+  window.addEventListener('resize', ()=>full());
+  full();
+
+  if(legIds){
+    document.getElementById(legIds.entry).textContent = Math.round(scn.entry).toLocaleString();
+    document.getElementById(legIds.stop).textContent = Math.round(scn.stop).toLocaleString();
+    document.getElementById(legIds.target).textContent = Math.round(scn.target).toLocaleString();
+    document.getElementById(legIds.rr).textContent = '1 : ' + scn.ratio.toFixed(1);
+  }
+  return {play};
+}
+
+const shortScn = buildScenario('short', 91);
+const longScn  = buildScenario('long', 47);
+
+const shortCtl = mountSetup('shortBox', shortScn, {entry:'sEntry',stop:'sStop',target:'sTarget',rr:'sRR'});
+const longCtl  = mountSetup('longBox', longScn, {entry:'lEntry',stop:'lStop',target:'lTarget',rr:'lRR'});
+document.getElementById('shortReplay').addEventListener('click', shortCtl.play);
+document.getElementById('longReplay').addEventListener('click', longCtl.play);
+
+/* ---------- hero ambient chart ---------- */
+(function hero(){
+  const canvas=document.getElementById('heroCanvas');
+  const ctx=canvas.getContext('2d');
+  let w,h,dpr;
+  function fit(){
+    dpr=Math.min(2,window.devicePixelRatio||1);
+    w=canvas.clientWidth; h=canvas.clientHeight;
+    canvas.width=w*dpr; canvas.height=h*dpr;
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  fit(); window.addEventListener('resize',fit);
+
+  const rnd=rng(13);
+  let closes=[22500]; for(let i=0;i<160;i++) closes.push(closes[closes.length-1]+(rnd()-0.5)*9+Math.sin(i/14)*2.4);
+  let candles=buildOHLC(closes,5);
+  let fast=ema(closes,9), slow=ema(closes,33);
+  let offset=0;
+
+  function frame(){
+    ctx.clearRect(0,0,w,h);
+    const cw=14;
+    const visible=Math.ceil(w/cw)+2;
+    const lo=Math.min(...closes.slice(-visible-40))-14, hi=Math.max(...closes.slice(-visible-40))+14;
+    const y=v=>h*0.14+(hi-v)/(hi-lo)*h*0.72;
+    const startI=closes.length-visible;
+
+    ctx.lineWidth=1.4; ctx.strokeStyle='rgba(62,107,216,.55)';
+    ctx.beginPath();
+    for(let i=0;i<visible;i++){ const idx=startI+i; if(idx<0||idx>=slow.length) continue;
+      const px=i*cw-offset, py=y(slow[idx]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.stroke();
+    ctx.lineWidth=1.1; ctx.strokeStyle='rgba(111,214,234,.6)';
+    ctx.beginPath();
+    for(let i=0;i<visible;i++){ const idx=startI+i; if(idx<0||idx>=fast.length) continue;
+      const px=i*cw-offset, py=y(fast[idx]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.stroke();
+
+    for(let i=0;i<visible;i++){
+      const idx=startI+i; if(idx<0||idx>=candles.length) continue;
+      const c=candles[idx], px=i*cw-offset, up=c.c>=c.o;
+      ctx.strokeStyle=ctx.fillStyle= up? 'rgba(47,217,154,.5)':'rgba(255,95,126,.5)';
+      ctx.beginPath(); ctx.moveTo(px,y(c.h)); ctx.lineTo(px,y(c.l)); ctx.stroke();
+      const by0=y(Math.max(c.o,c.c)), by1=y(Math.min(c.o,c.c));
+      ctx.fillRect(px-4,by0,8,Math.max(1.2,by1-by0));
+    }
+
+    offset+=0.55;
+    if(offset>=cw){
+      offset-=cw;
+      const last=closes[closes.length-1];
+      closes.push(last+(rnd()-0.5)*9+Math.sin(closes.length/14)*2.4);
+      candles=buildOHLC(closes.slice(-260),5);
+      fast=ema(closes.slice(-260),9); slow=ema(closes.slice(-260),33);
+      closes=closes.slice(-260);
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+
+/* ---------- room / rr interactive ---------- */
+(function room(){
+  const wick=document.getElementById('wick'), roomEl=document.getElementById('roomRange');
+  const wickV=document.getElementById('wickV'), roomV=document.getElementById('roomV');
+  const riskB=document.getElementById('riskB'), rewardB=document.getElementById('rewardB');
+  const riskFill=document.getElementById('riskFill'), rewardFill=document.getElementById('rewardFill');
+  const ratioBig=document.getElementById('ratioBig'), ratioSay=document.getElementById('ratioSay');
+  function upd(){
+    const risk=+wick.value, reward=+roomEl.value;
+    wickV.textContent=risk+' pts'; roomV.textContent=reward+' pts';
+    riskB.textContent=risk+' pts'; rewardB.textContent=reward+' pts';
+    const max=Math.max(risk,reward,1);
+    riskFill.style.width=(risk/max*100)+'%';
+    rewardFill.style.width=(reward/max*100)+'%';
+    const r=reward/risk;
+    ratioBig.textContent='1 : '+r.toFixed(1);
+    if(r>=2){ ratioBig.style.color='var(--up)'; ratioSay.textContent='Comfortably past the 1:2 floor. Take it.'; }
+    else if(r>=1.5){ ratioBig.style.color='var(--gold)'; ratioSay.textContent='Workable, but thin. Only with everything else clean.'; }
+    else { ratioBig.style.color='var(--down)'; ratioSay.textContent='Not enough room to the level. Pass, no matter how clean the candle is.'; }
+  }
+  wick.addEventListener('input',upd); roomEl.addEventListener('input',upd); upd();
+})();
+
+/* ---------- checklist ---------- */
+(function check(){
+  const items=[...document.querySelectorAll('.ci')];
+  const ring=document.getElementById('ring'), prg=document.getElementById('ringPrg'),
+        cnt=document.getElementById('ringCnt'), msg=document.getElementById('ringMsg');
+  const CIRC=326.7;
+  const msgs=[
+    'Work through the chart before the order does.',
+    'One down. Direction only — not a trade yet.',
+    'Cross and candle agree. Still need the room.',
+    'Three in. Check the space to the next level.',
+    'Almost there — the stop still has to be exact.',
+    'All five. This is the trade I actually take.'
+  ];
+  function upd(){
+    const n=items.filter(i=>i.classList.contains('on')).length;
+    cnt.textContent=n;
+    prg.style.strokeDashoffset=CIRC-(CIRC*n/5);
+    msg.textContent=msgs[n];
+    ring.classList.toggle('done',n===5);
+  }
+  items.forEach(it=>it.addEventListener('click',()=>{ it.classList.toggle('on'); upd(); }));
+  upd();
+})();
+
+/* ---------- scroll reveal + progress ---------- */
+(function reveal(){
+  const io=new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting) en.target.classList.add('in'); });
+  },{threshold:.18});
+  document.querySelectorAll('.band').forEach(el=>io.observe(el));
+})();
+(function scrollbar(){
+  const bar=document.getElementById('scrollbar');
+  function upd(){
+    const h=document.documentElement;
+    const p=h.scrollTop/(h.scrollHeight-h.clientHeight)*100;
+    bar.style.width=(isFinite(p)?p:0)+'%';
+  }
+  document.addEventListener('scroll',upd,{passive:true}); upd();
+})();
+</script>
+<script src="sitenav.js" defer></script>
+</body>
+</html>
