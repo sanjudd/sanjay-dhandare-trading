@@ -2,13 +2,13 @@
    so you can jump anywhere without the browser back button. */
 (function(){
   var PAGES = [
+    {href:'discipline-desk.html', label:'Discipline desk'},
     {href:'index.html', label:'The desk'},
     {href:'trading-journal.html', label:'Trading journal'},
     {href:'9-ema-strategy-animated.html', label:'9 EMA playbook'},
     {href:'9-33-ema-strategy.html', label:'9 & 33 EMA strategy'},
     {href:'breakeven-ledger-roadmap.html', label:'Trade planner'},
-    {href:'mindset-wall.html', label:'Mindset wall'},
-    {href:'discipline-desk.html', label:'Discipline desk'}
+    {href:'mindset-wall.html', label:'Mindset wall'}
   ];
 
   function currentFile(){
