@@ -127,10 +127,14 @@ h1,h2,h3{font-family:var(--serif);font-weight:400;line-height:1.03;letter-spacin
 .focusart{position:relative;justify-self:stretch;opacity:0;transform:scale(.96)}
 .go .focusart{opacity:1;transform:none;
   transition:opacity 1.2s ease .15s,transform 1.2s cubic-bezier(.2,.7,.3,1) .15s}
+.go .focusart{animation:focusart-breathe 9s ease-in-out 1.6s infinite}
+@keyframes focusart-breathe{0%,100%{transform:scale(1) translateY(0)}50%{transform:scale(1.018) translateY(-5px)}}
 .focusart img{width:100%;height:auto;display:block;
-  filter:contrast(1.04) brightness(.96);
-  -webkit-mask-image:radial-gradient(92% 86% at 50% 48%,#000 40%,transparent 100%);
-  mask-image:radial-gradient(92% 86% at 50% 48%,#000 40%,transparent 100%)}
+  filter:contrast(1.1) brightness(.9) saturate(.82);
+  -webkit-mask-image:radial-gradient(88% 82% at 50% 46%,#000 30%,transparent 100%);
+  mask-image:radial-gradient(88% 82% at 50% 46%,#000 30%,transparent 100%)}
+.focusart .pool{width:150%;
+  background:radial-gradient(circle,rgba(76,212,232,.16),rgba(255,166,64,.08) 46%,transparent 70%)}
 .pool{position:absolute;left:50%;top:50%;width:125%;aspect-ratio:1;translate:-50% -50%;
   background:radial-gradient(circle,rgba(76,212,232,.15),transparent 62%);z-index:-1}
 
