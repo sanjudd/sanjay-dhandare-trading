@@ -2,10 +2,10 @@
    so you can jump anywhere without the browser back button. */
 (function(){
   var PAGES = [
+    {href:'index.html', label:'9 EMA playbook'},
     {href:'discipline-desk.html', label:'Discipline desk'},
-    {href:'index.html', label:'The desk'},
+    {href:'sanjay-dhandare-trading.html', label:'The desk'},
     {href:'trading-journal.html', label:'Trading journal'},
-    {href:'9-ema-strategy-animated.html', label:'9 EMA playbook'},
     {href:'9-33-ema-strategy.html', label:'9 & 33 EMA strategy'},
     {href:'breakeven-ledger-roadmap.html', label:'Trade planner'},
     {href:'mindset-wall.html', label:'Mindset wall'}
@@ -21,7 +21,7 @@
 
   function init(){
     var cur = currentFile();
-    if(cur === 'sanjay-dhandare-trading.html') cur = 'index.html';
+    if(cur === '9-ema-strategy-animated.html') cur = 'index.html';
 
     var style = document.createElement('style');
     style.textContent = [
