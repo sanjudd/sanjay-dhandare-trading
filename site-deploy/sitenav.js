@@ -7,11 +7,13 @@
     {href:'9-ema-strategy-animated.html', label:'9 EMA playbook'},
     {href:'9-33-ema-strategy.html', label:'9 & 33 EMA strategy'},
     {href:'breakeven-ledger-roadmap.html', label:'Trade planner'},
-    {href:'mindset-wall.html', label:'Mindset wall'}
+    {href:'mindset-wall.html', label:'Mindset wall'},
+    {href:'discipline-desk.html', label:'Discipline desk'}
   ];
 
   function currentFile(){
-    var last = location.pathname.split('/').pop();
+    var path = location.pathname.replace(/\/+$/, ''); // ignore trailing slash(es)
+    var last = path.split('/').pop();
     if(!last) return 'index.html';
     if(!/\.html?$/i.test(last)) return last + '.html'; // clean-URL routes (e.g. /mindset-wall)
     return last;
@@ -66,7 +68,7 @@
     PAGES.forEach(function(p){
       var here = p.href === cur;
       var a = document.createElement('a');
-      a.href = here ? '#' : p.href;
+      a.href = here ? '#' : '/' + p.href;
       a.setAttribute('role','menuitem');
       if(here) a.className = 'sw-here';
       a.innerHTML = '<span>' + p.label + (here ? ' · here' : '') + '</span><span class="sw-dot"></span>';
