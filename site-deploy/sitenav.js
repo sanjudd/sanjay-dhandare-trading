@@ -28,15 +28,26 @@
       '#sw-root{position:fixed;left:16px;bottom:16px;z-index:2147483000;',
         'display:flex;align-items:center;gap:8px;',
         'font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",system-ui,sans-serif;}',
-      '#sw-back{all:unset;cursor:pointer;display:flex;align-items:center;justify-content:center;',
-        'width:38px;height:38px;box-sizing:border-box;flex:none;',
-        'background:rgba(9,10,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);',
-        'border:1px solid rgba(255,255,255,.16);color:#E9EBF0;border-radius:100px;',
-        'box-shadow:0 10px 30px -10px rgba(0,0,0,.65);',
-        'transition:border-color .15s,transform .15s;}',
-      '#sw-back:hover{border-color:rgba(255,255,255,.34);transform:translateX(-2px);}',
-      '#sw-back:active{transform:translateX(-2px) scale(.92);}',
-      '#sw-back svg{flex:none;opacity:.85;}',
+      '#sw-back{all:unset;cursor:pointer;display:flex;align-items:center;gap:7px;',
+        'box-sizing:border-box;flex:none;',
+        'background:linear-gradient(135deg,rgba(76,212,232,.18),rgba(9,10,15,.9));',
+        'backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);',
+        'border:1px solid rgba(76,212,232,.5);color:#E7FBFF;font-size:12.5px;font-weight:600;',
+        'letter-spacing:.02em;padding:10px 16px 10px 13px;border-radius:100px;',
+        'box-shadow:0 10px 30px -10px rgba(0,0,0,.65),0 0 0 rgba(76,212,232,0);',
+        'animation:sw-back-in .5s cubic-bezier(.34,1.56,.64,1) both,',
+          'sw-back-glow 2.6s ease-in-out .5s infinite;',
+        'transition:border-color .15s,transform .15s,background .15s,box-shadow .15s;}',
+      '#sw-back:hover{border-color:rgba(76,212,232,.9);transform:translateY(-2px);',
+        'background:linear-gradient(135deg,rgba(76,212,232,.3),rgba(9,10,15,.94));',
+        'box-shadow:0 14px 34px -12px rgba(0,0,0,.7),0 0 18px rgba(76,212,232,.5);}',
+      '#sw-back:hover svg{transform:translateX(-3px);}',
+      '#sw-back:active{transform:translateY(-1px) scale(.94);}',
+      '#sw-back svg{flex:none;opacity:.95;transition:transform .2s cubic-bezier(.34,1.56,.64,1);}',
+      '@keyframes sw-back-in{0%{opacity:0;transform:translateX(-18px) scale(.75);}',
+        '100%{opacity:1;transform:translateX(0) scale(1);}}',
+      '@keyframes sw-back-glow{0%,100%{box-shadow:0 10px 30px -10px rgba(0,0,0,.65),0 0 0 rgba(76,212,232,0);}',
+        '50%{box-shadow:0 10px 30px -10px rgba(0,0,0,.65),0 0 15px rgba(76,212,232,.5);}}',
       '#sw-page-wrap{position:relative;}',
       '#sw-btn{all:unset;cursor:pointer;display:flex;align-items:center;gap:8px;',
         'background:rgba(9,10,15,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);',
@@ -83,7 +94,7 @@
       '<button id="sw-back" type="button" aria-label="Go back" title="Go back">' +
         '<svg width="15" height="15" viewBox="0 0 24 24" fill="none">' +
           '<path d="M19 12H5M5 12l6-6M5 12l6 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>' +
-        '</svg>' +
+        '</svg><span>Back</span>' +
       '</button>' +
       '<div id="sw-page-wrap">' +
         '<button id="sw-btn" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Browse all pages">' +
